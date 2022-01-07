@@ -40,6 +40,8 @@ dependencies:
 - warp
 - servant-js
 - random
+- elm-bridge
+- wl-pprint-text
 
 executables:
   servant-elm-street-exe:

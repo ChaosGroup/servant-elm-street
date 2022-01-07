@@ -43,8 +43,185 @@ instance Elm a => HasForeignType LangElm ElmDefinition a where
 
 -- given some api type, generates the queries to endpoints as text
 elmForAPI :: (HasForeign LangElm ElmDefinition api, GenerateList
-                          ElmDefinition (Foreign ElmDefinition api)) => Proxy api -> ElmGenerator -> Text -- understand ElmDefinition & lang better (HasForeign docs)
-elmForAPI api generator = generator $ listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
+                          ElmDefinition (Foreign ElmDefinition api)) => Proxy api -> [Doc]
+elmForAPI api = map (endpointInfoToElmQuery defElmOptions) $ listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
+
+data UrlPrefix
+  = Static T.Text
+  | Dynamic
+
+defElmOptions :: ElmOptions
+defElmOptions = ElmOptions
+  { urlPrefix = Static ""
+  , elmTypeAlterations = Elm.defaultTypeAlterations
+  , elmAlterations = Elm.defaultAlterations
+  , elmToString = defaultElmToString
+  , emptyResponseElmTypes =
+      [ toElmType (Proxy :: Proxy ())
+      ]
+  , stringElmTypes =
+      [ toElmType (Proxy :: Proxy String)
+      , toElmType (Proxy :: Proxy T.Text)
+      ]
+  }
+
+data ElmOptions = ElmOptions {
+      urlPrefix :: UrlPrefix
+    , elmTypeAlterations :: ElmDefinition -> ElmDefinition
+    , elmAlterations :: ElmDefinition -> ElmDefinition
+    , elmToString :: ElmDefinition -> Text
+    , emptyResponseElmTypes :: [ElmDefinition]
+    , stringElmTypes :: [ElmDefinition]
+}
+
+endpointInfoToElmQuery :: ElmOptions -> Req ElmDefinition -> Text
+endpointInfoToElmQuery options requestInfo =
+ funcDef
+  where
+    funcDef =
+      vsep
+        [ fnName <+> ":" <+> typeSignature
+        , fnName <+> args <+> equals
+        , case letParams of
+            Just params ->
+              indent i
+              (vsep ["let"
+                    , indent i params
+                    , "in"
+                    , indent i elmRequest
+                    ])
+            Nothing ->
+              indent i elmRequest
+        ]
+
+    fnName =
+      requestInfo ^. reqFuncName . to (replace . camelCase) . to stext
+
+    replace = T.replace "-" "" . T.replace "." ""
+
+    typeSignature =
+      mkTypeSignature options requestInfo
+
+    args =
+      mkArgs options requestInfo
+
+    letParams =
+      mkLetParams options requestInfo
+
+    elmRequest =
+      mkRequest options requestInfo
+
+stext :: Text -> Doc
+stext = text . L.fromStrict
+
+mkTypeSignature :: ElmOptions -> Req ElmDefinition -> Doc
+mkTypeSignature options request =
+  (hsep . punctuate " ->") (catMaybes [urlPrefixType] ++ catMaybes [toMsgType, returnType])
+  where
+    urlPrefixType :: Maybe Doc
+    urlPrefixType =
+        case urlPrefix options of
+          Dynamic -> Just "String"
+          Static _ -> Nothing
+
+    elmTypeRef :: ElmDefinition -> Doc
+    elmTypeRef eType =
+      stext (toElmTypeRefWith options eType)
+
+    toMsgType :: Maybe Doc
+    toMsgType = do
+      result <- fmap elmTypeRef $ request ^. reqReturnType
+      Just ("(Result Http.Error " <+> parens result <+> " -> msg)")
+
+    returnType :: Maybe Doc
+    returnType = do
+      pure "Cmd msg"
+
+mkArgs :: ElmOptions -> Req ElmDefinition -> Doc
+mkArgs options request =
+  hsep ( -- Dynamic url prefix
+      case urlPrefix options of
+        Dynamic -> ["urlBase"]
+        Static _ -> [])
+
+-- not needed possibly - for query params?
+mkLetParams :: ElmOptions -> Req ElmDefinition -> Maybe Doc
+mkLetParams options request =
+    Just $ "params =" <$>
+           indent i ("List.filterMap identity" <$>
+                      parens ("List.concat" <$>
+                              indent i (elmList params)))
+  where
+    params :: [Doc]
+    params = map paramToDoc (request ^. reqUrl . queryStr)
+
+    paramToDoc :: QueryArg ElmDefinition -> Doc
+    paramToDoc qarg =
+      case qarg ^. queryArgType of
+        Normal ->
+          let
+            argType = qarg ^. queryArgName . argType
+            wrapped = isElmMaybeType argType
+            toStringSrc =
+              toString options (maybeOf argType)
+          in
+              "[" <+> (if wrapped then elmName else "Just" <+> elmName) <> line <>
+                indent 4 ("|> Maybe.map" <+> composeRight [toStringSrc, "Url.Builder.string" <+> dquotes name])
+                <+> "]"
+        Flag ->
+            "[" <+>
+            ("if" <+> elmName <+> "then" <$>
+            indent 4 ("Just" <+> parens ("Url.Builder.string" <+> dquotes name <+> dquotes PP.empty)) <$>
+            indent 2 "else" <$>
+            indent 4 "Nothing")
+            <+> "]"
+
+        List ->
+            let
+              argType = qarg ^. queryArgName . argType
+              toStringSrc =
+                toString options (listOf (maybeOf argType))
+            in
+            elmName <$>
+            indent 4 ("|> List.map"
+                      <+> composeRight
+                        [ toStringSrc
+                        , "Url.Builder.string" <+> dquotes (name <> "[]")
+                        , "Just"
+                        ]
+                      )
+
+      where
+        elmName = elmQueryArg qarg
+        name = qarg ^. queryArgName . argName . to (stext . unPathSegment)
+
+mkRequest :: ElmOptions -> Req ElmDefinition -> Doc
+mkRequest options request =
+  "Http.request" <$>
+  indent i
+    (elmRecord
+       [ "method =" <$>
+         indent i (dquotes method)
+       , "headers =" <$>
+         indent i "[]"
+       , "url =" <$>
+         indent i url
+       , "body =" <$>
+         indent i "Http.emptyBody"
+       , "expect =" <$>
+         indent i expect
+       , "timeout =" <$>
+         indent i "Nothing"
+       , "tracker =" <$>
+         indent i "Nothing"
+       ])
+  where
+    method =
+       request ^. reqMethod . to (stext . decodeUtf8)
+
+    url =
+      mkUrl options (request ^. reqUrl . path)
+       <> mkQueryParams request
 
     expect =
       case request ^. reqReturnType of

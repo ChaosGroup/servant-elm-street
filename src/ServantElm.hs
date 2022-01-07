@@ -6,32 +6,34 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 
 module ServantElm
-    ( elmForAPI
+    ( --elmForAPI
     ) where
 
-import Servant.Foreign
-import Data.Text
-import Data.Proxy
+import Prelude hiding ((<$>))
+import Servant.Foreign hiding (Static)
+import Data.Text hiding (concat, map)
 import Elm.Generic (Elm(..))
 import Elm.Ast (ElmDefinition(..))
 import Data.Aeson
 import Data.Proxy
 import Data.Text as T (Text)
 import Data.Text.IO as T (writeFile, readFile)
-import GHC.Generics
 import Network.Wai
-import Network.Wai.Handler.Warp
-import qualified Data.Text as T
-import Servant
+import qualified Data.Text as T hiding (concat, map)
 import Foreign (Int)
-import Servant.JS
+import Servant.JS hiding (urlPrefix)
 import Data.Aeson.Types (ToJSON)
 import Servant (Proxy(Proxy), Get, JSON, Server, Application, serve)
 import GHC.Generics (Generic)
 import Servant.API
 import Network.Wai.Handler.Warp (run)
+import qualified Servant.Elm as Elm
+import Text.PrettyPrint.Leijen.Text as PP
+import qualified Data.Text.Lazy as L
+import qualified Elm.Module as Elm
 
 data LangElm
 

@@ -11,7 +11,7 @@
 
 module Main where
 
-import ServantElm (elmForAPI)
+import ServantElm --(elmForAPI)
 import Data.Text
 import Data.Proxy
 

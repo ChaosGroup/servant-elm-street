@@ -66,18 +66,12 @@ server = return users
 userAPI :: Proxy UserAPI
 userAPI = Proxy
 
-type ElmGenerator = [Req ElmDefinition] -> Text
-
 data LangElm
 
 instance Elm a => HasForeignType LangElm ElmDefinition a where
   typeFor _ _ proxyA = toElmDefinition proxyA
 
--- receives a list of requests and returns elm query functions
-generator :: ElmGenerator
-generator requests = "" --to be implemented
-
 main :: IO ()
 main = do
     print $ listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) userAPI
-     --elmForAPI generator userAPI
+     --elmForAPI userAPI

@@ -35,16 +35,23 @@ import Network.Wai.Handler.Warp (run)
 
 data LangElm
 
+-- map ETypeDef, EType to ElmDefinition and ...?
 instance Elm a => HasForeignType LangElm ElmDefinition a where
   typeFor _ _ proxyA = toElmDefinition proxyA
-
-type ElmGenerator = [Req ElmDefinition] -> Text
 
 -- given some api type, generates the queries to endpoints as text
 elmForAPI :: (HasForeign LangElm ElmDefinition api, GenerateList
                           ElmDefinition (Foreign ElmDefinition api)) => Proxy api -> ElmGenerator -> Text -- understand ElmDefinition & lang better (HasForeign docs)
 elmForAPI api generator = generator $ listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
 
--- receives a list of requests and returns elm query functions
-generator :: ElmGenerator
-generator requests = ""
+    expect =
+      case request ^. reqReturnType of
+        Just elmTypeExpr
+          | isEmptyType options elmTypeExpr
+           ->
+            "Http.expectString " <> line <+> indent i "(\\x -> case x of" <> line <+>
+            indent i "Err e -> toMsg (Err e)" <> line <+>
+            indent i "Ok _ -> toMsg (Ok ()))"
+        Just elmTypeExpr ->
+          "Http.expectJson toMsg" <+> renderDecoderName elmTypeExpr
+        Nothing -> error "mkHttpRequest: no reqReturnType?"

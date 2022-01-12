@@ -16,7 +16,7 @@ import Prelude hiding ((<$>))
 import Servant.Foreign hiding (Static)
 import Data.Text hiding (concat, map)
 import Elm.Generic (Elm(..))
-import Elm.Ast (ElmDefinition(..))
+import Elm.Ast
 import Data.Aeson
 import Data.Proxy
 import Data.Text as T (Text)
@@ -46,16 +46,10 @@ elmForAPI :: (HasForeign LangElm ElmDefinition api, GenerateList
                           ElmDefinition (Foreign ElmDefinition api)) => Proxy api -> [Doc]
 elmForAPI api = map (endpointInfoToElmQuery defElmOptions) $ listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
 
-data UrlPrefix
-  = Static T.Text
-  | Dynamic
 
 defElmOptions :: ElmOptions
 defElmOptions = ElmOptions
-  { urlPrefix = Static ""
-  , elmTypeAlterations = Elm.defaultTypeAlterations
-  , elmAlterations = Elm.defaultAlterations
-  , elmToString = defaultElmToString
+  { elmToString = defaultElmToString
   , emptyResponseElmTypes =
       [ toElmType (Proxy :: Proxy ())
       ]
@@ -66,15 +60,12 @@ defElmOptions = ElmOptions
   }
 
 data ElmOptions = ElmOptions {
-      urlPrefix :: UrlPrefix
-    , elmTypeAlterations :: ElmDefinition -> ElmDefinition
-    , elmAlterations :: ElmDefinition -> ElmDefinition
-    , elmToString :: ElmDefinition -> Text
+      elmToString :: ElmDefinition -> Text
     , emptyResponseElmTypes :: [ElmDefinition]
     , stringElmTypes :: [ElmDefinition]
 }
 
-endpointInfoToElmQuery :: ElmOptions -> Req ElmDefinition -> Text
+endpointInfoToElmQuery :: ElmOptions -> Req ElmDefinition -> Doc
 endpointInfoToElmQuery options requestInfo =
  funcDef
   where
@@ -116,13 +107,8 @@ stext = text . L.fromStrict
 
 mkTypeSignature :: ElmOptions -> Req ElmDefinition -> Doc
 mkTypeSignature options request =
-  (hsep . punctuate " ->") (catMaybes [urlPrefixType] ++ catMaybes [toMsgType, returnType])
+  (hsep . punctuate " ->") (["String"] ++ catMaybes [toMsgType, returnType])
   where
-    urlPrefixType :: Maybe Doc
-    urlPrefixType =
-        case urlPrefix options of
-          Dynamic -> Just "String"
-          Static _ -> Nothing
 
     elmTypeRef :: ElmDefinition -> Doc
     elmTypeRef eType =
@@ -139,61 +125,7 @@ mkTypeSignature options request =
 
 mkArgs :: ElmOptions -> Req ElmDefinition -> Doc
 mkArgs options request =
-  hsep ( -- Dynamic url prefix
-      case urlPrefix options of
-        Dynamic -> ["urlBase"]
-        Static _ -> [])
-
--- not needed possibly - for query params?
-mkLetParams :: ElmOptions -> Req ElmDefinition -> Maybe Doc
-mkLetParams options request =
-    Just $ "params =" <$>
-           indent i ("List.filterMap identity" <$>
-                      parens ("List.concat" <$>
-                              indent i (elmList params)))
-  where
-    params :: [Doc]
-    params = map paramToDoc (request ^. reqUrl . queryStr)
-
-    paramToDoc :: QueryArg ElmDefinition -> Doc
-    paramToDoc qarg =
-      case qarg ^. queryArgType of
-        Normal ->
-          let
-            argType = qarg ^. queryArgName . argType
-            wrapped = isElmMaybeType argType
-            toStringSrc =
-              toString options (maybeOf argType)
-          in
-              "[" <+> (if wrapped then elmName else "Just" <+> elmName) <> line <>
-                indent 4 ("|> Maybe.map" <+> composeRight [toStringSrc, "Url.Builder.string" <+> dquotes name])
-                <+> "]"
-        Flag ->
-            "[" <+>
-            ("if" <+> elmName <+> "then" <$>
-            indent 4 ("Just" <+> parens ("Url.Builder.string" <+> dquotes name <+> dquotes PP.empty)) <$>
-            indent 2 "else" <$>
-            indent 4 "Nothing")
-            <+> "]"
-
-        List ->
-            let
-              argType = qarg ^. queryArgName . argType
-              toStringSrc =
-                toString options (listOf (maybeOf argType))
-            in
-            elmName <$>
-            indent 4 ("|> List.map"
-                      <+> composeRight
-                        [ toStringSrc
-                        , "Url.Builder.string" <+> dquotes (name <> "[]")
-                        , "Just"
-                        ]
-                      )
-
-      where
-        elmName = elmQueryArg qarg
-        name = qarg ^. queryArgName . argName . to (stext . unPathSegment)
+  hsep ["toMsg"]
 
 mkRequest :: ElmOptions -> Req ElmDefinition -> Doc
 mkRequest options request =

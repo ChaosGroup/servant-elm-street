@@ -37,6 +37,7 @@ library
     , elm-bridge
     , elm-street
     , filepath
+    , microlens
     , random
     , servant
     , servant-elm
@@ -63,6 +64,7 @@ executable servant-elm-street-exe
     , elm-bridge
     , elm-street
     , filepath
+    , microlens
     , random
     , servant
     , servant-elm
@@ -91,6 +93,7 @@ test-suite servant-elm-street-test
     , elm-bridge
     , elm-street
     , filepath
+    , microlens
     , random
     , servant
     , servant-elm

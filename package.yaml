@@ -42,6 +42,7 @@ dependencies:
 - random
 - elm-bridge
 - wl-pprint-text
+- microlens
 
 executables:
   servant-elm-street-exe:

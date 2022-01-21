@@ -173,23 +173,20 @@ mkArgs request =
 mkRequest :: Req ElmDefinition -> Doc
 mkRequest request =
   "Http.request"
-    <$> indent
-      i
+    <$> indent4Spaces
       ( elmRecord
           [ "method ="
-              <$> indent i (dquotes method),
+              <$> indent4Spaces method,
             "headers ="
-              <$> indent i "[]",
+              <$> indent4Spaces "[]",
             "url ="
-              <$> indent i url,
+              <$> indent4Spaces url,
             "body ="
-              <$> indent i "Http.emptyBody",
-            "expect ="
-              <$> indent i expect,
+              <$> indent4Spaces "Http.emptyBody",
             "timeout ="
-              <$> indent i "Nothing",
+              <$> indent4Spaces "Nothing",
             "tracker ="
-              <$> indent i "Nothing"
+              <$> indent4Spaces "Nothing"
           ]
       )
   where

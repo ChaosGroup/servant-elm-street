@@ -88,7 +88,7 @@ endpointInfoToElmQuery requestInfo =
       vsep
         [ fnName <+> ":" <+> typeSignature,
           fnName <+> args <+> equals,
-          indent i elmRequest
+          indent4Spaces elmRequest
         ]
 
     fnName = error "to implement"
@@ -115,11 +115,12 @@ stext = text . fromStrict
 mkUrl :: [Segment ElmDefinition] -> Doc
 mkUrl segments =
   urlBuilder
-    <$> (indent i . elmList)
+    <$> (indent4Spaces . elmList)
       (map segmentToDoc segments)
   where
     urlBuilder :: Doc
-    urlBuilder = "Url.Builder.crossOrigin urlBase" :: Doc -- why "" instead of urlBase in result
+    urlBuilder = "Url.Builder.crossOrigin urlBase" :: Doc
+
     segmentToDoc :: Segment ElmDefinition -> Doc
     segmentToDoc s =
       case unSegment s of
@@ -157,7 +158,7 @@ mkTypeSignature request =
 
 mkArgs :: Req ElmDefinition -> Doc
 mkArgs request =
-  hsep ["toMsg"]
+  hsep ["urlBase", "toMsg"]
 
 mkRequest :: Req ElmDefinition -> Doc
 mkRequest request =
@@ -186,49 +187,4 @@ mkRequest request =
     --request ^. reqMethod . to (stext . decodeUtf8)
 
     url =
-      mkUrl (request ^. reqUrl . path) -- do I need to understand forall - don't understand the ()
-    expect =
-      case request ^. reqReturnType of
-        Just elmTypeExpr ->
-          "Http.expectJson toMsg" {-<+> renderDecoderName elmTypeExpr-}
-        Nothing -> error "mkHttpRequest: no reqReturnType?"
-
-{-
-renderDecoderName :: EType -> Doc
-renderDecoderName elmTypeExpr =
-  case elmTypeExpr of
-    ETyApp (ETyCon (ETCon "List")) t ->
-      parens ("Json.Decode.list " <> parens (renderDecoderName t))
-    ETyApp (ETyCon (ETCon "Maybe")) t ->
-      parens ("Json.Decode.maybe " <> parens (renderDecoderName t))
-    ETyApp x y ->
-      parens (renderDecoderName x <+> renderDecoderName y)
-    ETyCon (ETCon "Int") -> "Json.Decode.int"
-    ETyCon (ETCon "String") -> "Json.Decode.string"
-    _ -> ("jsonDec" <> stext (pack (renderElm elmTypeExpr)))
--}
-
-{-renderOnlyDecoderName :: ElmDefinition -> Doc
-renderOnlyDecoderName elmTypeExpr = case T.words $ prettyShowDecoder elmTypeExpr of
-                                      []   -> emptyDoc
-                                      x:_ -> pretty x
--}
-{-renderDecoderName :: ElmDefinition -> Doc
-renderDecoderName elmTypeExpr =
-  case elmTypeExpr of
-    DefAlias _ -> renderOnlyDecoderName elmTypeExpr
-    DefType _ -> renderOnlyDecoderName elmTypeExpr
-    DefPrim (ElmPrim ElmUnit) -> undefined -- error "to-do", don't write it
-    DefPrim (ElmNever) -> undefined -- error "to-do"
-    DefPrim (ElmBool) -> "Json.Decode.bool"
-    DefPrim (ElmChar) -> undefined
-    DefPrim (ElmInt) -> "Json.Decode.int"
-    DefPrim (ElmFloat) -> "Json.Decode.float"
-    DefPrim (ElmString) -> "Json.Decode.string"
-    DefPrim (ElmTime) -> undefined
-    DefPrim (ElmMaybe a) -> undefined
-    DefPrim (ElmResult a a) -> undefined
-    DefPrim (ElmPair a a) -> undefined
-    DefPrim (ElmTriple a a a) -> undefined
-    DefPrim (ElmList a) -> wrapParens
--}
+      mkUrl (request ^. reqUrl . path)

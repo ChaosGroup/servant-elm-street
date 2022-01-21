@@ -59,14 +59,9 @@ import Prelude hiding ((<$>))
 
 data LangElm
 
--- typeFor is not a visible member of HasForeignType class
--- Docc occurencies
-
--- map ETypeDef, EType to ElmDefinition and ...?
 instance Elm a => HasForeignType LangElm ElmDefinition a where
   typeFor _ _ proxyA = toElmDefinition proxyA
 
--- given some api type, generates the queries to endpoints as text
 elmForAPI ::
   ( HasForeign LangElm ElmDefinition api,
     GenerateList
@@ -76,73 +71,14 @@ elmForAPI ::
   Proxy api ->
   [Doc]
 elmForAPI api =
-  map (endpointInfoToElmQuery) $
+  map endpointInfoToElmQuery $
     listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
 
-{-
-elmCaptureArg :: Segment ElmDefinition -> Doc
-elmCaptureArg segment =
-  "capture_" <>
-  captureArg segment ^. argName . to (stext . replace . unPathSegment)
-  where
-    replace = T.replace "-" "_"
--}
-
--- new
-{-pipeRight :: [Doc] -> Doc
-pipeRight =
-  encloseSep lparen rparen " |> " . filter (not . isEmpty)
--}
--- new
-{-toString :: ElmDefinition -> Doc
-toString  argType =
-  if isElmStringType  argType then
-    mempty
-  else
-    stext $ elmToString  argType
--}
-
--- new
 elmRecord :: [Doc] -> Doc
 elmRecord = encloseSep (lbrace <> space) (line <> rbrace) (comma <> space)
 
--- new
-{-toElmTypeRefWith :: ElmDefinition -> Text
-toElmTypeRefWith = pack . renderElm . elmTypeAlterations -- what is a record wildcard
--}
--- new
-{-defaultElmToString :: ElmDefinition -> Text
-defaultElmToString argType =
-  case argType of
-    DefPrim ElmBool -> "(\\value -> if value then \"true\" else \"false\")"
-    DefPrim ElmFloat -> "String.fromFloat"
-    DefPrim ElmChar -> "String.fromChar"
-    DefPrim (ElmMaybe v) -> "(Maybe.map " <> defaultElmToString v <> " >> Maybe.withDefault \"\")"
-    _ -> "String.fromInt"
--}
-{-defElmOptions :: ElmOptions
-defElmOptions =
-  ElmOptions
-    { elmToString = defaultElmToString,
-      emptyResponseElmTypes =
-        [],
-      --toElmType (Proxy :: Proxy ())
-
-      stringElmTypes =
-        []
-    }
--}
---toElmType (Proxy :: Proxy String),
---toElmType (Proxy :: Proxy Text)
-
-{-data ElmOptions = ElmOptions
-  { elmToString :: ElmDefinition -> Text,
-    emptyResponseElmTypes :: [ElmDefinition],
-    stringElmTypes :: [ElmDefinition]
-  }
--}
-i :: Int
-i = 4
+indent4Spaces :: Doc -> Doc
+indent4Spaces = indent 4
 
 endpointInfoToElmQuery :: Req ElmDefinition -> Doc
 endpointInfoToElmQuery requestInfo =
@@ -169,7 +105,6 @@ endpointInfoToElmQuery requestInfo =
     elmRequest =
       mkRequest requestInfo
 
--- new today
 elmList :: [Doc] -> Doc
 elmList [] = lbracket <> rbracket
 elmList ds = lbracket <+> hsep (punctuate (line <> comma) ds) <$> rbracket

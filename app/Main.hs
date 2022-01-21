@@ -14,8 +14,6 @@ import Data.Aeson
 import Data.Aeson.Types (ToJSON)
 import Data.Proxy
 import Data.Text
-import Data.Text as T (Text)
-import qualified Data.Text as T
 import Data.Text.IO as T (readFile, writeFile)
 import Elm.Ast (ElmDefinition (..))
 import Elm.Generic (Elm (..))
@@ -31,6 +29,7 @@ import Servant.API
 import Servant.Foreign
 import Servant.JS
 import ServantElm (elmForAPI)
+import Text.PrettyPrint.Leijen.Text (Doc, displayT, displayTStrict, renderPretty, vsep)
 
 type UserAPI =
   "users" :> Get '[JSON] [User]

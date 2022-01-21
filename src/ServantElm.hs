@@ -21,19 +21,35 @@ import Data.Text as T (Text, pack, replace, words)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Text.IO (readFile, writeFile)
 import Data.Text.Lazy (fromStrict)
-import Elm (prettyShowDecoder)
-import Elm.Ast (ElmDefinition (..), ElmPrim (ElmBool, ElmChar, ElmFloat, ElmMaybe), TypeName (TypeName), TypeRef (RefCustom, RefPrim))
+import Elm (Elm (..), prettyShowDecoder)
+import Elm.Ast
 import Elm.Generic (Elm (..))
 import Elm.TyRep (EType, toElmType)
 import Foreign (Int)
 import GHC.Desugar (AnnotationWrapper)
+import GHC.ExecutionStack (Location (functionName))
 import GHC.Generics (Generic, to)
 import Lens.Micro ((^.))
 import Network.Wai ()
 import Network.Wai.Handler.Warp (run)
 import Servant (Application, Get, JSON, Proxy (Proxy), Server, serve)
 import Servant.API
-import Servant.Foreign --as SF (Foreign, GenerateList, HasForeign, HasForeignType (typeFor), PathSegment, Req, Segment, SegmentType (Cap, Static), argName, camelCase, captureArg, listFromAPI, reqFuncName, reqReturnType, unPathSegment, unSegment)
+import Servant.Foreign
+  ( GenerateList,
+    HasForeign (Foreign),
+    HasForeignType (..),
+    PathSegment (unPathSegment),
+    Req,
+    Segment (unSegment),
+    SegmentType (Cap, Static),
+    camelCase,
+    listFromAPI,
+    path,
+    reqFuncName,
+    reqMethod,
+    reqReturnType,
+    reqUrl,
+  )
 import Text.PrettyPrint.Leijen.Text
   ( Doc,
     comma,
@@ -45,12 +61,16 @@ import Text.PrettyPrint.Leijen.Text
     lbrace,
     lbracket,
     line,
+    lparen,
     parens,
+    pretty,
     punctuate,
     rbrace,
     rbracket,
+    rparen,
     space,
     text,
+    textStrict,
     vsep,
     (<$>),
     (<+>),

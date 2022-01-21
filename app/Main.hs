@@ -69,7 +69,9 @@ data LangElm
 instance Elm a => HasForeignType LangElm ElmDefinition a where
   typeFor _ _ proxyA = toElmDefinition proxyA
 
+queryFile :: Text
+queryFile = displayTStrict . renderPretty 0.8 120 $ vsep (elmForAPI userAPI)
+
 main :: IO ()
 main = do
-  --print $ listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) userAPI
-  elmForAPI userAPI
+  T.writeFile "api.elm" queryFile

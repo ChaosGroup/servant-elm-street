@@ -211,5 +211,34 @@ mkRequest request =
       )
   where
     method = pretty . pack . show $ request ^. reqMethod
+
     url =
       mkUrl (request ^. reqUrl . path)
+
+    expect =
+      case request ^. reqReturnType of
+        Just elmTypeExpr ->
+          "Http.expectJson toMsg" <+> renderDecoderName elmTypeExpr
+        Nothing -> error "mkHttpRequest: no reqReturnType?"
+
+renderOnlyDecoderName :: ElmDefinition -> Doc
+renderOnlyDecoderName elmTypeExpr = case T.words $ prettyShowDecoder elmTypeExpr of
+  [] -> emptyDoc
+  x : _ -> pretty x
+
+renderDecoderName :: ElmDefinition -> Doc
+renderDecoderName elmTypeExpr =
+  case elmTypeExpr of
+    DefAlias _ -> renderOnlyDecoderName elmTypeExpr
+    DefType _ -> renderOnlyDecoderName elmTypeExpr
+    DefPrim ElmBool -> "Json.Decode.bool"
+    DefPrim ElmInt -> "Json.Decode.int"
+    DefPrim ElmChar -> "elmStreetDecodeChar"
+    DefPrim ElmFloat -> "Json.Decode.float"
+    DefPrim ElmString -> "Json.Decode.string"
+    DefPrim (ElmMaybe tRef) -> parens "Json.Decode.maybe" <+> renderDecoderName -- need to have a renderName for typerefs
+    DefPrim (ElmResult fst snd) -> undefined
+    DefPrim (ElmPair fst snd) -> parens "elmStreetDecodePair " <+> fst <+> " " <+> snd -- need to have a renderName for typerefs
+    DefPrim (ElmTriple fst snd trd) -> parens "elmStreetDecodeTriple " <+> fst <+> " " <+> snd <+> " " <+> trd -- need to have a renderName for typerefs
+    DefPrim (ElmList tRef) -> parens "Json.Decode.list " <+> elmTypeRefToDoc tRef
+    DefPrim _ -> undefined

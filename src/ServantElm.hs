@@ -190,8 +190,6 @@ mkRequest request =
           ]
       )
   where
-    method = error "to implement"
-    --request ^. reqMethod . to (stext . decodeUtf8)
-
+    method = pretty . pack . show $ request ^. reqMethod
     url =
       mkUrl (request ^. reqUrl . path)

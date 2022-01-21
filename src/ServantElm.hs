@@ -125,25 +125,38 @@ mkUrl segments =
           dquotes (stext (unPathSegment path))
         Cap arg ->
           error
-            "TODO implement" -- for captures, not needed now
-            {-let toStringSrc =
-                  toString  (maybeOf (arg ^. argType))
-             in pipeRight [elmCaptureArg s, toStringSrc]-}
+            "TODO implement-2" -- for captures, not needed now
 
-{-elmTypeRefDoc :: TypeRef -> Doc
-elmTypeRefDoc = \case
-  RefPrim elmPrim -> elmPrimDoc elmPrim
+elmTypeRefToDoc :: TypeRef -> Doc
+elmTypeRefToDoc = \case
+  RefPrim elmPrim -> elmPrimToDoc elmPrim
   RefCustom (TypeName typeName) -> pretty typeName
--}
+
+elmTypeParenDoc :: TypeRef -> Doc -- does it make sense to be a fn
+elmTypeParenDoc = parens . elmTypeRefToDoc
+
+elmPrimToDoc :: ElmPrim -> Doc
+elmPrimToDoc = \case
+  ElmUnit -> "()"
+  ElmNever -> "Never"
+  ElmBool -> "Bool"
+  ElmChar -> "Char"
+  ElmInt -> "Int"
+  ElmFloat -> "Float"
+  ElmString -> "String"
+  ElmTime -> "Posix"
+  ElmMaybe t -> "Maybe" <+> elmTypeParenDoc t
+  ElmResult l r -> "Result" <+> elmTypeParenDoc l <+> elmTypeParenDoc r
+  ElmPair a b -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> rparen
+  ElmTriple a b c -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> comma <+> elmTypeRefToDoc c <> rparen
+  ElmList l -> "List" <+> elmTypeParenDoc l
 
 mkTypeSignature :: Req ElmDefinition -> Doc
 mkTypeSignature request =
   (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, returnType])
   where
     elmTypeRef :: ElmDefinition -> Doc
-    elmTypeRef eDef = error "to-do - copy elmPrimDoc, use elmTypeRefDoc and all dependencies"
-    --definitionToRef eDef
-
+    elmTypeRef eDef = elmTypeRefToDoc (definitionToRef eDef)
     toMsgType :: Maybe Doc
     toMsgType = do
       result <- fmap elmTypeRef $ request ^. reqReturnType

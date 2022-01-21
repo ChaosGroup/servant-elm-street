@@ -91,10 +91,7 @@ endpointInfoToElmQuery requestInfo =
           indent4Spaces elmRequest
         ]
 
-    fnName = error "to implement"
-    --request ^. reqFuncName . to (replace . camelCase) . to stext
-
-    --replace = replace "-" "" . replace "." ""
+    fnName = textStrict . camelCase $ requestInfo ^. reqFuncName
 
     typeSignature =
       mkTypeSignature requestInfo

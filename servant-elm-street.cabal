@@ -6,12 +6,12 @@ cabal-version: 1.12
 
 name:           servant-elm-street
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/servant-elm-street#readme>
-homepage:       https://github.com/githubuser/servant-elm-street#readme
-bug-reports:    https://github.com/githubuser/servant-elm-street/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2021 Author name here
+description:    Please see the README on GitHub at <https://github.com/ChaosGroup/servant-elm-street/blob/main/README.md>
+homepage:       https://github.com/ChaosGroup/#readme
+bug-reports:    https://github.com/ChaosGroup//issues
+author:         Magdalena Lungolova
+maintainer:     mvlungolova@gmail.com
+copyright:      Copyright 2021 Chaos Software OOD
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -20,7 +20,8 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/servant-elm-street
+  location: https://github.com/ChaosGroup/
+  subdir: servant-elm-street
 
 library
   exposed-modules:
@@ -29,24 +30,18 @@ library
       Paths_servant_elm_street
   hs-source-dirs:
       src
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-deriving-strategies -Wmissing-export-lists -Wunused-packages
   build-depends:
       aeson
     , base >=4.7 && <5
-    , casing
-    , elm-bridge
     , elm-street
-    , filepath
     , microlens
+    , prettyprinter
     , random
     , servant
-    , servant-elm
     , servant-foreign
-    , servant-js
-    , servant-server
     , text
     , wai
-    , warp
-    , wl-pprint-text
   default-language: Haskell2010
 
 executable servant-elm-street-exe
@@ -55,26 +50,19 @@ executable servant-elm-street-exe
       Paths_servant_elm_street
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-deriving-strategies -Wmissing-export-lists -Wunused-packages -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , base
-    , casing
-    , elm-bridge
+    , base >=4.7 && <5
     , elm-street
-    , filepath
     , microlens
+    , prettyprinter
     , random
     , servant
-    , servant-elm
     , servant-elm-street
     , servant-foreign
-    , servant-js
-    , servant-server
     , text
     , wai
-    , warp
-    , wl-pprint-text
   default-language: Haskell2010
 
 test-suite servant-elm-street-test
@@ -84,24 +72,17 @@ test-suite servant-elm-street-test
       Paths_servant_elm_street
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-deriving-strategies -Wmissing-export-lists -Wunused-packages -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
     , base >=4.7 && <5
-    , casing
-    , elm-bridge
     , elm-street
-    , filepath
     , microlens
+    , prettyprinter
     , random
     , servant
-    , servant-elm
     , servant-elm-street
     , servant-foreign
-    , servant-js
-    , servant-server
     , text
     , wai
-    , warp
-    , wl-pprint-text
   default-language: Haskell2010

@@ -140,18 +140,18 @@ mkUrl segments =
     segmentToDoc :: Segment ElmDefinition -> Doc
     segmentToDoc s =
       case unSegment s of
-        Static path ->
+        Static sPath ->
           dquotes (stext (unPathSegment path))
-        Cap arg ->
+        Cap _ ->
           error
-            "TODO implement-2" -- for captures, not needed now
+            "to implement - for captures, not needed now"
 
 elmTypeRefToDoc :: TypeRef -> Doc
 elmTypeRefToDoc = \case
   RefPrim elmPrim -> elmPrimToDoc elmPrim
   RefCustom (TypeName typeName) -> pretty typeName
 
-elmTypeParenDoc :: TypeRef -> Doc -- does it make sense to be a fn
+elmTypeParenDoc :: TypeRef -> Doc
 elmTypeParenDoc = parens . elmTypeRefToDoc
 
 elmPrimToDoc :: ElmPrim -> Doc

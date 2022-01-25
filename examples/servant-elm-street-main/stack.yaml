@@ -1,0 +1,9 @@
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/23.yaml
+
+packages:
+- .
+
+extra-deps:
+- /home/magdalena/projects/servant-playground/servant-elm-street
+- elm-street-0.1.0.4

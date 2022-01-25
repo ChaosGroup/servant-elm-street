@@ -1,0 +1,42 @@
+name:                servant-elm-street-main
+version:             0.1.0.0
+github:              "ChaosGroup//servant-elm-street-main"
+license:             BSD3
+author:              "Magdalena Lungolova"
+maintainer:          "mvlungolova@gmail.com"
+copyright:           "Copyright 2021 Chaos Software OOD"
+
+extra-source-files:
+- README.md
+
+description:         Please see the README on GitHub at <https://github.com/githubuser/servant-elm-street-main#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- servant
+- elm-street
+
+library:
+  source-dirs: src
+
+executables:
+  servant-elm-street-main-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - servant-elm-street-main
+
+tests:
+  servant-elm-street-main-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - servant-elm-street-main

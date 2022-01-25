@@ -80,18 +80,18 @@ elmForAPI ::
       (Foreign ElmDefinition api)
   ) =>
   Proxy api ->
-  [Doc]
+  [Doc ann]
 elmForAPI api =
   map endpointInfoToElmQuery $
     listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
 
-elmRecord :: [Doc] -> Doc
+elmRecord :: [Doc ann] -> Doc ann
 elmRecord = encloseSep (lbrace <> space) (line <> rbrace) (comma <> space)
 
-indent4Spaces :: Doc -> Doc
+indent4Spaces :: Doc ann -> Doc ann
 indent4Spaces = indent 4
 
-endpointInfoToElmQuery :: Req ElmDefinition -> Doc
+endpointInfoToElmQuery :: Req ElmDefinition -> Doc ann
 endpointInfoToElmQuery requestInfo =
   funcDef
   where
@@ -102,7 +102,7 @@ endpointInfoToElmQuery requestInfo =
           indent4Spaces elmRequest
         ]
 
-    fnName = textStrict . camelCase $ requestInfo ^. reqFuncName
+    fnName = unsafeTextWithoutNewlines . camelCase $ requestInfo ^. reqFuncName
 
     typeSignature =
       mkTypeSignature requestInfo
@@ -112,40 +112,38 @@ endpointInfoToElmQuery requestInfo =
     elmRequest =
       mkRequest requestInfo
 
-elmList :: [Doc] -> Doc
+elmList :: [Doc ann] -> Doc ann
 elmList [] = lbracket <> rbracket
-elmList ds = lbracket <+> hsep (punctuate (line <> comma) ds) <$> rbracket
+elmList ds = lbracket <+> hsep (punctuate (line <> comma) ds) <> line <> rbracket
 
-stext :: Text -> Doc
-stext = text . fromStrict
-
-mkUrl :: [Segment ElmDefinition] -> Doc
+mkUrl :: [Segment ElmDefinition] -> Doc ann
 mkUrl segments =
   urlBuilder
-    <$> (indent4Spaces . elmList)
+    <> line
+    <> (indent4Spaces . elmList)
       (map segmentToDoc segments)
   where
-    urlBuilder :: Doc
-    urlBuilder = "Url.Builder.crossOrigin urlBase" :: Doc
+    urlBuilder :: Doc ann
+    urlBuilder = "Url.Builder.crossOrigin urlBase" :: Doc ann
 
-    segmentToDoc :: Segment ElmDefinition -> Doc
+    segmentToDoc :: Segment ElmDefinition -> Doc ann
     segmentToDoc s =
       case unSegment s of
         Static sPath ->
-          dquotes (stext (unPathSegment path))
+          dquotes (unsafeTextWithoutNewlines (unPathSegment sPath))
         Cap _ ->
           error
             "to implement - for captures, not needed now"
 
-elmTypeRefToDoc :: TypeRef -> Doc
+elmTypeRefToDoc :: TypeRef -> Doc ann
 elmTypeRefToDoc = \case
   RefPrim elmPrim -> elmPrimToDoc elmPrim
   RefCustom (TypeName typeName) -> pretty typeName
 
-elmTypeParenDoc :: TypeRef -> Doc
+elmTypeParenDoc :: TypeRef -> Doc ann
 elmTypeParenDoc = parens . elmTypeRefToDoc
 
-elmPrimToDoc :: ElmPrim -> Doc
+elmPrimToDoc :: ElmPrim -> Doc ann
 elmPrimToDoc = \case
   ElmUnit -> "()"
   ElmNever -> "Never"
@@ -161,38 +159,41 @@ elmPrimToDoc = \case
   ElmTriple a b c -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> comma <+> elmTypeRefToDoc c <> rparen
   ElmList l -> "List" <+> elmTypeParenDoc l
 
-mkTypeSignature :: Req ElmDefinition -> Doc
+mkTypeSignature :: Req ElmDefinition -> Doc ann
 mkTypeSignature request =
   (hsep . punctuate "->") ("String" : catMaybes [toMsgType, returnType])
   where
-    elmTypeRef :: ElmDefinition -> Doc
+    elmTypeRef :: ElmDefinition -> Doc ann
     elmTypeRef eDef = elmTypeRefToDoc (definitionToRef eDef)
-    toMsgType :: Maybe Doc
+    toMsgType :: Maybe (Doc ann)
     toMsgType =
       fmap mkMsgType $ request ^. reqReturnType
       where
         mkMsgType x = "(Result Http.Error " <+> parens (elmTypeRef x) <+> "-> msg)"
 
-    returnType :: Maybe Doc
+    returnType :: Maybe (Doc ann)
     returnType = pure "Cmd msg"
 
-mkRequest :: Req ElmDefinition -> Doc
+mkRequest :: Req ElmDefinition -> Doc ann
 mkRequest request =
   "Http.request"
-    <$> indent4Spaces
+    <> line
+    <> indent4Spaces
       ( elmRecord
           [ "method ="
-              <$> indent4Spaces method,
+              <> indent4Spaces method,
             "headers ="
-              <$> indent4Spaces "[]",
+              <> indent4Spaces "[]",
             "url ="
-              <$> indent4Spaces url,
+              <> indent4Spaces url,
+            "expect ="
+              <> indent4Spaces expect,
             "body ="
-              <$> indent4Spaces "Http.emptyBody",
+              <> indent4Spaces "Http.emptyBody",
             "timeout ="
-              <$> indent4Spaces "Nothing",
+              <> indent4Spaces "Nothing",
             "tracker ="
-              <$> indent4Spaces "Nothing"
+              <> indent4Spaces "Nothing"
           ]
       )
   where

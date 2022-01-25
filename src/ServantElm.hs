@@ -116,8 +116,7 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args =
-      mkArgs requestInfo
+    args = hsep ["urlBase", "toMsg"]
 
     elmRequest =
       mkRequest requestInfo
@@ -184,12 +183,7 @@ mkTypeSignature request =
         mkMsgType x = "(Result Http.Error " <+> parens (elmTypeRef x) <+> "-> msg)"
 
     returnType :: Maybe Doc
-    returnType = do
-      pure "Cmd msg"
-
-mkArgs :: Req ElmDefinition -> Doc
-mkArgs request =
-  hsep ["urlBase", "toMsg"]
+    returnType = pure "Cmd msg"
 
 mkRequest :: Req ElmDefinition -> Doc
 mkRequest request =

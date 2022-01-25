@@ -178,9 +178,10 @@ mkTypeSignature request =
     elmTypeRef :: ElmDefinition -> Doc
     elmTypeRef eDef = elmTypeRefToDoc (definitionToRef eDef)
     toMsgType :: Maybe Doc
-    toMsgType = do
-      result <- fmap elmTypeRef $ request ^. reqReturnType
-      Just ("(Result Http.Error " <+> parens result <+> " -> msg)")
+    toMsgType =
+      fmap mkMsgType $ request ^. reqReturnType
+      where
+        mkMsgType x = "(Result Http.Error " <+> parens (elmTypeRef x) <+> "-> msg)"
 
     returnType :: Maybe Doc
     returnType = do

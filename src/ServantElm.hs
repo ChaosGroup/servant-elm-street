@@ -8,49 +8,26 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 
 module ServantElm
   ( elmForAPI,
   )
 where
 
-import Data.Aeson.Types (ToJSON)
 import Data.Maybe (catMaybes)
-import Data.Text as T (Text, pack, replace, words)
-import Data.Text.Encoding (decodeUtf8)
-import Data.Text.IO (readFile, writeFile)
-import Data.Text.Lazy (fromStrict)
-import Elm (Elm (..), prettyShowDecoder)
+import Data.Proxy (Proxy (..))
+import Data.Text as T (pack, takeWhile)
+import Elm (Elm (..))
 import Elm.Ast
-import Elm.Generic (Elm (..))
-import Elm.TyRep (EType, toElmType)
-import Foreign (Int)
-import GHC.Desugar (AnnotationWrapper)
-import GHC.ExecutionStack (Location (functionName))
-import GHC.Generics (Generic, to)
+  ( ElmDefinition,
+    ElmPrim (..),
+    TypeName (TypeName, unTypeName),
+    TypeRef (..),
+    definitionToRef,
+  )
 import Lens.Micro ((^.))
 import Network.Wai ()
-import Network.Wai.Handler.Warp (run)
-import Servant (Application, Get, JSON, Proxy (Proxy), Server, serve)
-import Servant.API
-import Servant.Foreign
-  ( GenerateList,
-    HasForeign (Foreign),
-    HasForeignType (..),
-    PathSegment (unPathSegment),
-    Req,
-    Segment (unSegment),
-    SegmentType (Cap, Static),
-    camelCase,
-    listFromAPI,
-    path,
-    reqFuncName,
-    reqMethod,
-    reqReturnType,
-    reqUrl,
-  )
-import Text.PrettyPrint.Leijen.Text
+import Prettyprinter
   ( Doc,
     comma,
     dquotes,
@@ -69,11 +46,25 @@ import Text.PrettyPrint.Leijen.Text
     rbracket,
     rparen,
     space,
-    text,
-    textStrict,
     vsep,
-    (<$>),
     (<+>),
+  )
+import Prettyprinter.Internal (unsafeTextWithoutNewlines)
+import Servant.Foreign
+  ( GenerateList,
+    HasForeign (Foreign),
+    HasForeignType (..),
+    PathSegment (unPathSegment),
+    Req,
+    Segment (unSegment),
+    SegmentType (Cap, Static),
+    camelCase,
+    listFromAPI,
+    path,
+    reqFuncName,
+    reqMethod,
+    reqReturnType,
+    reqUrl,
   )
 import Prelude hiding ((<$>))
 

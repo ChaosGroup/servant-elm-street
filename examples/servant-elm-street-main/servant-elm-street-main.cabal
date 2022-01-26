@@ -1,13 +1,17 @@
 cabal-version: 1.12
 
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
 name:           servant-elm-street-main
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/servant-elm-street-main#readme>
-homepage:       https://github.com/githubuser/servant-elm-street-main#readme
-bug-reports:    https://github.com/githubuser/servant-elm-street-main/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2022 Author name here
+homepage:       https://github.com/ChaosGroup/#readme
+bug-reports:    https://github.com/ChaosGroup//issues
+author:         Magdalena Lungolova
+maintainer:     mvlungolova@gmail.com
+copyright:      Copyright 2021 Chaos Software OOD
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

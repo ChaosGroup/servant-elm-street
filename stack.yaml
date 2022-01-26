@@ -3,6 +3,7 @@ resolver:
 
 packages:
 - .
+- ./examples/servant-elm-street-main
 
 extra-deps:
   - servant-foreign-0.15.4

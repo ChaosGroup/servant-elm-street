@@ -34,17 +34,6 @@ ghc-options:
 - -Wmissing-export-lists
 - -Wunused-packages
 
-executables:
-  servant-elm-street-exe:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - servant-elm-street
-
 tests:
   servant-elm-street-test:
     main:                Spec.hs

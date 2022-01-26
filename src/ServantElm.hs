@@ -49,7 +49,6 @@ import Prettyprinter
     vsep,
     (<+>),
   )
-import Prettyprinter.Internal (unsafeTextWithoutNewlines)
 import Servant.Foreign
   ( GenerateList,
     HasForeign (Foreign),
@@ -102,7 +101,7 @@ endpointInfoToElmQuery requestInfo =
           indent4Spaces elmRequest
         ]
 
-    fnName = unsafeTextWithoutNewlines . camelCase $ requestInfo ^. reqFuncName
+    fnName = pretty . camelCase $ requestInfo ^. reqFuncName
 
     typeSignature =
       mkTypeSignature requestInfo
@@ -130,7 +129,7 @@ mkUrl segments =
     segmentToDoc s =
       case unSegment s of
         Static sPath ->
-          dquotes (unsafeTextWithoutNewlines (unPathSegment sPath))
+          dquotes (pretty (unPathSegment sPath))
         Cap _ ->
           error
             "to implement - for captures, not needed now"

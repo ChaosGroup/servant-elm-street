@@ -15,6 +15,12 @@ dependencies:
 - base >= 4.7 && < 5
 - servant
 - elm-street
+- servant-elm-street
+- aeson
+- servant-server
+- servant-foreign
+- text
+- prettyprinter
 
 library:
   source-dirs: src

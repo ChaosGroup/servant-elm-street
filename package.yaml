@@ -18,11 +18,8 @@ dependencies:
 - servant-foreign
 - text
 - base >= 4.7 && < 5
-- aeson
 - elm-street
-- servant
 - wai
-- random
 - microlens
 - prettyprinter
 

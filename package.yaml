@@ -4,7 +4,7 @@ github:              "ChaosGroup//servant-elm-street"
 license:             BSD3
 author:              "Magdalena Lungolova"
 maintainer:          "mvlungolova@gmail.com"
-copyright:           "Copyright 2021 Chaos Software OOD"
+copyright:           "Copyright 2022 Chaos Software OOD"
 
 extra-source-files:
 - README.md

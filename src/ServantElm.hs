@@ -26,7 +26,6 @@ import Elm.Ast
     definitionToRef,
   )
 import Lens.Micro ((^.))
-import Network.Wai ()
 import Prettyprinter
   ( Doc,
     comma,

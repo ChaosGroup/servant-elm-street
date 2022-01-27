@@ -115,7 +115,7 @@ mkUrl segments =
       (map segmentToDoc segments)
   where
     urlBuilder :: Doc ann
-    urlBuilder = "Url.Builder.crossOrigin urlBase" :: Doc ann
+    urlBuilder = "Url.Builder.crossOrigin urlBase"
 
     segmentToDoc :: Segment ElmDefinition -> Doc ann
     segmentToDoc s =

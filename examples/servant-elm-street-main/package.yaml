@@ -13,17 +13,28 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- servant
-- elm-street
-- servant-elm-street
-- aeson
-- servant-server
-- servant-foreign
 - text
-- prettyprinter
+
+ghc-options:
+- -Wall
+- -Werror
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+- -Widentities
+- -Wincomplete-record-updates
+- -Wmissing-export-lists
+- -Wunused-packages
 
 library:
   source-dirs: src
+  dependencies:
+  - servant-elm-street
+  - aeson
+  - servant-foreign
+  - servant
+  - elm-street
+  - servant-server
+  - prettyprinter
 
 executables:
   servant-elm-street-main-exe:

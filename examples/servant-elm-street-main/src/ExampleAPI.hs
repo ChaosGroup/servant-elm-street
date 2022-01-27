@@ -10,6 +10,7 @@
 
 module ExampleAPI
   ( queryFile,
+    server,
   )
 where
 
@@ -21,7 +22,6 @@ import Elm.Print (showDoc)
 import GHC.Generics (Generic)
 import Prettyprinter (vsep)
 import Servant (Get, JSON, Proxy (..), Server, type (:<|>) (..), type (:>))
-import Servant.API (Get, JSON, type (:<|>) (..), type (:>))
 import Servant.Foreign (HasForeignType (..))
 import ServantElm (elmForAPI)
 

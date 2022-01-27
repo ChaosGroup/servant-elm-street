@@ -1,4 +1,4 @@
-module Main where
+module Main (main) where
 
 import Data.Text.IO as T
 import ExampleAPI (queryFile)

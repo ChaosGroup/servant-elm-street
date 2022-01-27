@@ -13,7 +13,6 @@ author:         Magdalena Lungolova
 maintainer:     mvlungolova@gmail.com
 copyright:      Copyright 2022 Chaos Software OOD
 license:        BSD3
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md

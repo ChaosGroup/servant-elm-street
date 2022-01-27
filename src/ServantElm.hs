@@ -65,7 +65,6 @@ import Servant.Foreign
     reqReturnType,
     reqUrl,
   )
-import Prelude hiding ((<$>))
 
 data LangElm
 

@@ -159,7 +159,7 @@ elmPrimToDoc = \case
 
 mkTypeSignature :: Req ElmDefinition -> Doc ann
 mkTypeSignature request =
-  (hsep . punctuate "->") ("String" : catMaybes [toMsgType, returnType])
+  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, returnType])
   where
     elmTypeRef :: ElmDefinition -> Doc ann
     elmTypeRef eDef = elmTypeRefToDoc (definitionToRef eDef)

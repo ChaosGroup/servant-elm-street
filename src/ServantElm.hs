@@ -16,14 +16,10 @@ where
 
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
-import Data.Text as T (pack, takeWhile)
+import Data.Text as T (pack)
 import Elm (Elm (..))
 import Elm.Ast
   ( ElmDefinition,
-    ElmPrim (..),
-    TypeName (TypeName, unTypeName),
-    TypeRef (..),
-    definitionToRef,
   )
 import Lens.Micro ((^.))
 import Prettyprinter
@@ -37,13 +33,11 @@ import Prettyprinter
     lbrace,
     lbracket,
     line,
-    lparen,
     parens,
     pretty,
     punctuate,
     rbrace,
     rbracket,
-    rparen,
     space,
     vsep,
     (<+>),
@@ -132,41 +126,12 @@ mkUrl segments =
           error
             "to implement - for captures, not needed now"
 
-elmTypeRefToDoc :: TypeRef -> Doc ann
-elmTypeRefToDoc = \case
-  RefPrim elmPrim -> elmPrimToDoc elmPrim
-  RefCustom (TypeName typeName) -> pretty typeName
-
-elmTypeParenDoc :: TypeRef -> Doc ann
-elmTypeParenDoc = parens . elmTypeRefToDoc
-
-elmPrimToDoc :: ElmPrim -> Doc ann
-elmPrimToDoc = \case
-  ElmUnit -> "()"
-  ElmNever -> "Never"
-  ElmBool -> "Bool"
-  ElmChar -> "Char"
-  ElmInt -> "Int"
-  ElmFloat -> "Float"
-  ElmString -> "String"
-  ElmTime -> "Posix"
-  ElmMaybe t -> "Maybe" <+> elmTypeParenDoc t
-  ElmResult l r -> "Result" <+> elmTypeParenDoc l <+> elmTypeParenDoc r
-  ElmPair a b -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> rparen
-  ElmTriple a b c -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> comma <+> elmTypeRefToDoc c <> rparen
-  ElmList l -> "List" <+> elmTypeParenDoc l
-
 mkTypeSignature :: Req ElmDefinition -> Doc ann
-mkTypeSignature request =
+mkTypeSignature _ =
   (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, returnType])
   where
-    elmTypeRef :: ElmDefinition -> Doc ann
-    elmTypeRef eDef = elmTypeRefToDoc (definitionToRef eDef)
     toMsgType :: Maybe (Doc ann)
-    toMsgType =
-      fmap mkMsgType $ request ^. reqReturnType
-      where
-        mkMsgType x = "(Result Http.Error " <+> parens (elmTypeRef x) <+> "-> msg)"
+    toMsgType = Just . parens $ "Result Http.Error ()" <+> "-> msg"
 
     returnType :: Maybe (Doc ann)
     returnType = pure "Cmd msg"
@@ -201,28 +166,6 @@ mkRequest request =
 
     expect =
       case request ^. reqReturnType of
-        Just elmTypeExpr ->
-          "Http.expectJson toMsg" <+> renderDecoderName elmTypeExpr
+        Just _ ->
+          "Http.expectWhatever toMsg"
         Nothing -> error "mkHttpRequest: no reqReturnType?"
-
-renderOnlyDecoderName :: ElmDefinition -> Doc
-renderOnlyDecoderName elmTypeExpr = case T.words $ prettyShowDecoder elmTypeExpr of
-  [] -> emptyDoc
-  x : _ -> pretty x
-
-renderDecoderName :: ElmDefinition -> Doc
-renderDecoderName elmTypeExpr =
-  case elmTypeExpr of
-    DefAlias _ -> renderOnlyDecoderName elmTypeExpr
-    DefType _ -> renderOnlyDecoderName elmTypeExpr
-    DefPrim ElmBool -> "Json.Decode.bool"
-    DefPrim ElmInt -> "Json.Decode.int"
-    DefPrim ElmChar -> "elmStreetDecodeChar"
-    DefPrim ElmFloat -> "Json.Decode.float"
-    DefPrim ElmString -> "Json.Decode.string"
-    DefPrim (ElmMaybe tRef) -> parens "Json.Decode.maybe" <+> renderDecoderName -- need to have a renderName for typerefs
-    DefPrim (ElmResult fst snd) -> undefined
-    DefPrim (ElmPair fst snd) -> parens "elmStreetDecodePair " <+> fst <+> " " <+> snd -- need to have a renderName for typerefs
-    DefPrim (ElmTriple fst snd trd) -> parens "elmStreetDecodeTriple " <+> fst <+> " " <+> snd <+> " " <+> trd -- need to have a renderName for typerefs
-    DefPrim (ElmList tRef) -> parens "Json.Decode.list " <+> elmTypeRefToDoc tRef
-    DefPrim _ -> undefined

@@ -16,10 +16,28 @@ where
 
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
-import Data.Text as T (pack)
+import Data.Text as T (pack, takeWhile)
 import Elm (Elm (..))
 import Elm.Ast
   ( ElmDefinition,
+    ElmPrim
+      ( ElmBool,
+        ElmChar,
+        ElmFloat,
+        ElmInt,
+        ElmList,
+        ElmMaybe,
+        ElmNever,
+        ElmPair,
+        ElmResult,
+        ElmString,
+        ElmTime,
+        ElmTriple,
+        ElmUnit
+      ),
+    TypeName (TypeName, unTypeName),
+    TypeRef (..),
+    definitionToRef,
   )
 import Lens.Micro ((^.))
 import Prettyprinter
@@ -166,6 +184,35 @@ mkRequest request =
 
     expect =
       case request ^. reqReturnType of
-        Just _ ->
-          "Http.expectWhatever toMsg"
+        Just elmTypeExpr ->
+          "Http.expectJson toMsg" <+> (typeRefDecoder . definitionToRef) elmTypeExpr
         Nothing -> error "mkHttpRequest: no reqReturnType?"
+
+typeRefDecoder :: TypeRef -> Doc ann
+typeRefDecoder (RefCustom TypeName {..}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
+typeRefDecoder (RefPrim elmPrim) = case elmPrim of
+  ElmUnit -> "Json.Decode.map (always ()) (Json.Decode.list Json.Decode.string)"
+  ElmNever -> "Json.Decode.fail \"Never is not possible\""
+  ElmBool -> "Json.Decode.bool"
+  ElmChar -> "elmStreetDecodeChar"
+  ElmInt -> "Json.Decode.int"
+  ElmFloat -> "Json.Decode.float"
+  ElmString -> "Json.Decode.string"
+  ElmTime -> "Iso.decoder"
+  ElmMaybe t ->
+    "maybe"
+      <+> typeRefDecoder t
+  ElmResult l r ->
+    parens "elmStreetDecodeEither"
+      <+> typeRefDecoder l
+      <+> typeRefDecoder r
+  ElmPair a b ->
+    parens "elmStreetDecodePair"
+      <+> typeRefDecoder a
+      <+> typeRefDecoder b
+  ElmTriple a b c ->
+    parens "elmStreetDecodeTriple"
+      <+> typeRefDecoder a
+      <+> typeRefDecoder b
+      <+> typeRefDecoder c
+  ElmList l -> parens "Json.Decode.list" <+> typeRefDecoder l

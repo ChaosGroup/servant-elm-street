@@ -1,0 +1,48 @@
+name:                servant-elm-street-main
+version:             0.1.0.0
+github:              "ChaosGroup//servant-elm-street-main"
+license:             BSD3
+author:              "Magdalena Lungolova"
+maintainer:          "mvlungolova@gmail.com"
+copyright:           "Copyright 2022 Chaos Software OOD"
+
+extra-source-files:
+- README.md
+
+description:         Please see the README on GitHub at <https://github.com/githubuser/servant-elm-street-main#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- text
+
+ghc-options:
+- -Wall
+- -Werror
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+- -Widentities
+- -Wincomplete-record-updates
+- -Wmissing-export-lists
+- -Wunused-packages
+
+library:
+  source-dirs: src
+  dependencies:
+  - servant-elm-street
+  - aeson
+  - servant-foreign
+  - servant
+  - elm-street
+  - servant-server
+  - prettyprinter
+
+executables:
+  servant-elm-street-main-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - servant-elm-street-main

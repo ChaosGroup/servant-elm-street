@@ -1,0 +1,41 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           servant-elm-street
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/ChaosGroup/servant-elm-street/blob/main/README.md>
+homepage:       https://github.com/ChaosGroup/#readme
+bug-reports:    https://github.com/ChaosGroup//issues
+author:         Magdalena Lungolova
+maintainer:     mvlungolova@gmail.com
+copyright:      Copyright 2022 Chaos Software OOD
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/ChaosGroup/
+  subdir: servant-elm-street
+
+library
+  exposed-modules:
+      ServantElm
+  other-modules:
+      Paths_servant_elm_street
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-deriving-strategies -Wmissing-export-lists -Wunused-packages
+  build-depends:
+      base >=4.7 && <5
+    , elm-street
+    , microlens
+    , prettyprinter
+    , servant-foreign
+    , text
+  default-language: Haskell2010

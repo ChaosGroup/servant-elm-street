@@ -1,0 +1,56 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           servant-elm-street-main
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/servant-elm-street-main#readme>
+homepage:       https://github.com/ChaosGroup/#readme
+bug-reports:    https://github.com/ChaosGroup//issues
+author:         Magdalena Lungolova
+maintainer:     mvlungolova@gmail.com
+copyright:      Copyright 2022 Chaos Software OOD
+license:        BSD3
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/ChaosGroup/
+  subdir: servant-elm-street-main
+
+library
+  exposed-modules:
+      ExampleAPI
+  other-modules:
+      Paths_servant_elm_street_main
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wunused-packages
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , elm-street
+    , prettyprinter
+    , servant
+    , servant-elm-street
+    , servant-foreign
+    , servant-server
+    , text
+  default-language: Haskell2010
+
+executable servant-elm-street-main-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_servant_elm_street_main
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wunused-packages -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , servant-elm-street-main
+    , text
+  default-language: Haskell2010

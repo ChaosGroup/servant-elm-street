@@ -1,0 +1,10 @@
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/18.yaml
+
+packages:
+- .
+- ./examples/servant-elm-street-main
+
+extra-deps:
+  - servant-foreign-0.15.4
+  - elm-street-0.1.0.4

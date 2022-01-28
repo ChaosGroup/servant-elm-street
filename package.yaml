@@ -1,0 +1,34 @@
+name:                servant-elm-street
+version:             0.1.0.0
+github:              "ChaosGroup//servant-elm-street"
+license:             BSD3
+author:              "Magdalena Lungolova"
+maintainer:          "mvlungolova@gmail.com"
+copyright:           "Copyright 2022 Chaos Software OOD"
+
+extra-source-files:
+- README.md
+
+description:         Please see the README on GitHub at <https://github.com/ChaosGroup/servant-elm-street/blob/main/README.md>
+
+library:
+  source-dirs: src
+
+dependencies:
+- servant-foreign
+- text
+- base >= 4.7 && < 5
+- elm-street
+- microlens
+- prettyprinter
+
+ghc-options:
+- -Wall
+- -Werror
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+- -Widentities
+- -Wincomplete-record-updates
+- -Wmissing-deriving-strategies
+- -Wmissing-export-lists
+- -Wunused-packages

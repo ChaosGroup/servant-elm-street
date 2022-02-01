@@ -11,6 +11,7 @@
 
 module ServantElm
   ( elmForAPI,
+    getReqs,
   )
 where
 
@@ -91,8 +92,17 @@ elmForAPI ::
   Proxy api ->
   [Doc ann]
 elmForAPI api =
-  map endpointInfoToElmQuery $
-    listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
+  map endpointInfoToElmQuery $ getReqs api
+
+getReqs ::
+  ( HasForeign LangElm ElmDefinition api,
+    GenerateList
+      ElmDefinition
+      (Foreign ElmDefinition api)
+  ) =>
+  Proxy api ->
+  [Req ElmDefinition]
+getReqs = listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition)
 
 elmRecord :: [Doc ann] -> Doc ann
 elmRecord = encloseSep (lbrace <> space) (line <> rbrace) (comma <> space)

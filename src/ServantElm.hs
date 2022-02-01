@@ -252,7 +252,7 @@ mkRequest request =
 typeRefDecoder :: TypeRef -> Doc ann
 typeRefDecoder (RefCustom TypeName {..}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
 typeRefDecoder (RefPrim elmPrim) = case elmPrim of
-  ElmUnit -> "Json.Decode.map (always ()) (Json.Decode.list Json.Decode.string)"
+  ElmUnit -> parens "Json.Decode.map (always ()) (Json.Decode.list Json.Decode.string)"
   ElmNever -> "Json.Decode.fail \"Never is not possible\""
   ElmBool -> "Json.Decode.bool"
   ElmChar -> "elmStreetDecodeChar"
@@ -261,19 +261,23 @@ typeRefDecoder (RefPrim elmPrim) = case elmPrim of
   ElmString -> "Json.Decode.string"
   ElmTime -> "Iso.decoder"
   ElmMaybe t ->
-    "maybe"
-      <+> typeRefDecoder t
+    parens $
+      "maybe"
+        <+> typeRefDecoder t
   ElmResult l r ->
-    parens "elmStreetDecodeEither"
-      <+> typeRefDecoder l
-      <+> typeRefDecoder r
+    parens $
+      "elmStreetDecodeEither"
+        <+> typeRefDecoder l
+        <+> typeRefDecoder r
   ElmPair a b ->
-    parens "elmStreetDecodePair"
-      <+> typeRefDecoder a
-      <+> typeRefDecoder b
+    parens $
+      "elmStreetDecodePair"
+        <+> typeRefDecoder a
+        <+> typeRefDecoder b
   ElmTriple a b c ->
-    parens "elmStreetDecodeTriple"
-      <+> typeRefDecoder a
-      <+> typeRefDecoder b
-      <+> typeRefDecoder c
-  ElmList l -> parens "Json.Decode.list" <+> typeRefDecoder l
+    parens $
+      "elmStreetDecodeTriple"
+        <+> typeRefDecoder a
+        <+> typeRefDecoder b
+        <+> typeRefDecoder c
+  ElmList l -> parens $ "Json.Decode.list" <+> typeRefDecoder l

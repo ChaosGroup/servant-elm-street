@@ -200,7 +200,7 @@ mkTypeSignature request =
     toMsgType =
       fmap mkMsgType $ request ^. reqReturnType
       where
-        mkMsgType x = "(Result Http.Error" <+> parens (elmTypeRef x) <+> "-> msg)"
+        mkMsgType x = parens $ "Result Http.Error" <+> parens (elmTypeRef x) <+> "-> msg"
 
     bodyType :: Maybe (Doc ann)
     bodyType = fmap elmTypeRef $ request ^. reqBody

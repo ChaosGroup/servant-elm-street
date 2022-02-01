@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -236,7 +237,7 @@ mkRequest request =
           "Http.emptyBody"
 
 typeRefDecoder :: TypeRef -> Doc ann
-typeRefDecoder (RefCustom TypeName {..}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
+typeRefDecoder (RefCustom TypeName {unTypeName}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
 typeRefDecoder (RefPrim elmPrim) = case elmPrim of
   ElmUnit -> parens "Json.Decode.map (always ()) (Json.Decode.list Json.Decode.string)"
   ElmNever -> parens "Json.Decode.fail \"Never is not possible\""

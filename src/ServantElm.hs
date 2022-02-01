@@ -113,6 +113,15 @@ elmRecord = encloseSep (lbrace <> space) (line <> rbrace) (comma <> space)
 indent4Spaces :: Doc ann -> Doc ann
 indent4Spaces = indent 4
 
+bodyValue :: Doc ann
+bodyValue = "bodyValue"
+
+toMsg :: Doc ann
+toMsg = "toMsg"
+
+urlBase :: Doc ann
+urlBase = "urlBase"
+
 endpointInfoToElmQuery :: Req ElmDefinition -> Doc ann
 endpointInfoToElmQuery requestInfo =
   funcDef
@@ -129,7 +138,7 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args = hsep ["urlBase", "toMsg", "bodyValue"]
+    args = hsep [urlBase, toMsg, bodyValue]
 
     elmRequest =
       mkRequest requestInfo
@@ -146,7 +155,7 @@ mkUrl segments =
       (map segmentToDoc segments)
   where
     urlBuilder :: Doc ann
-    urlBuilder = "Url.Builder.crossOrigin urlBase"
+    urlBuilder = "Url.Builder.crossOrigin" <+> urlBase
 
     segmentToDoc :: Segment ElmDefinition -> Doc ann
     segmentToDoc s =
@@ -230,13 +239,13 @@ mkRequest request =
     expect =
       case request ^. reqReturnType of
         Just elmTypeExpr ->
-          "Http.expectJson toMsg" <+> (typeRefDecoder . definitionToRef) elmTypeExpr
+          "Http.expectJson" <+> toMsg <+> (typeRefDecoder . definitionToRef) elmTypeExpr
         Nothing -> error "mkHttpRequest: no reqReturnType?"
 
     body =
       case request ^. reqBody of
         Just _ ->
-          "Http.jsonBody bodyValue"
+          "Http.jsonBody" <+> bodyValue
         Nothing ->
           "Http.emptyBody"
 

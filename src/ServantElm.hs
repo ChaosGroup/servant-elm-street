@@ -52,11 +52,13 @@ import Prettyprinter
     lbrace,
     lbracket,
     line,
+    lparen,
     parens,
     pretty,
     punctuate,
     rbrace,
     rbracket,
+    rparen,
     space,
     vsep,
     (<+>),
@@ -72,6 +74,7 @@ import Servant.Foreign
     camelCase,
     listFromAPI,
     path,
+    reqBody,
     reqFuncName,
     reqMethod,
     reqReturnType,
@@ -126,7 +129,7 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args = hsep ["urlBase", "toMsg"]
+    args = hsep ["urlBase", "toMsg", "bodyValue"]
 
     elmRequest =
       mkRequest requestInfo
@@ -154,12 +157,44 @@ mkUrl segments =
           error
             "to implement - for captures, not needed now"
 
+elmTypeRefToDoc :: TypeRef -> Doc ann
+elmTypeRefToDoc = \case
+  RefPrim elmPrim -> elmPrimToDoc elmPrim
+  RefCustom (TypeName typeName) -> pretty typeName
+
+elmTypeParenDoc :: TypeRef -> Doc ann
+elmTypeParenDoc = parens . elmTypeRefToDoc
+
+elmPrimToDoc :: ElmPrim -> Doc ann
+elmPrimToDoc = \case
+  ElmUnit -> "()"
+  ElmNever -> "Never"
+  ElmBool -> "Bool"
+  ElmChar -> "Char"
+  ElmInt -> "Int"
+  ElmFloat -> "Float"
+  ElmString -> "String"
+  ElmTime -> "Posix"
+  ElmMaybe t -> "Maybe" <+> elmTypeParenDoc t
+  ElmResult l r -> "Result" <+> elmTypeParenDoc l <+> elmTypeParenDoc r
+  ElmPair a b -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> rparen
+  ElmTriple a b c -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> comma <+> elmTypeRefToDoc c <> rparen
+  ElmList l -> "List" <+> elmTypeParenDoc l
+
 mkTypeSignature :: Req ElmDefinition -> Doc ann
-mkTypeSignature _ =
-  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, returnType])
+mkTypeSignature request =
+  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, returnType])
   where
+    elmTypeRef :: ElmDefinition -> Doc ann
+    elmTypeRef eDef = elmTypeRefToDoc $ definitionToRef eDef
     toMsgType :: Maybe (Doc ann)
-    toMsgType = Just . parens $ "Result Http.Error ()" <+> "-> msg"
+    toMsgType =
+      fmap mkMsgType $ request ^. reqReturnType
+      where
+        mkMsgType x = "(Result Http.Error" <+> parens (elmTypeRef x) <+> "-> msg)"
+
+    bodyType :: Maybe (Doc ann)
+    bodyType = fmap elmTypeRef $ request ^. reqBody
 
     returnType :: Maybe (Doc ann)
     returnType = pure "Cmd msg"
@@ -179,7 +214,7 @@ mkRequest request =
             "expect ="
               <> indent4Spaces expect,
             "body ="
-              <> indent4Spaces "Http.emptyBody",
+              <> indent4Spaces body,
             "timeout ="
               <> indent4Spaces "Nothing",
             "tracker ="
@@ -197,6 +232,13 @@ mkRequest request =
         Just elmTypeExpr ->
           "Http.expectJson toMsg" <+> (typeRefDecoder . definitionToRef) elmTypeExpr
         Nothing -> error "mkHttpRequest: no reqReturnType?"
+
+    body =
+      case request ^. reqBody of
+        Just _ ->
+          "Http.jsonBody bodyValue"
+        Nothing ->
+          "Http.emptyBody"
 
 typeRefDecoder :: TypeRef -> Doc ann
 typeRefDecoder (RefCustom TypeName {..}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)

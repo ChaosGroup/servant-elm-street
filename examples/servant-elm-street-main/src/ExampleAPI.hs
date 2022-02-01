@@ -22,7 +22,8 @@ import Servant (Get, JSON, Post, Proxy (..), ReqBody, Server, type (:<|>) (..), 
 type UserAPI =
   "users" :> Get '[JSON] [User]
     :<|> "albert" :> Post '[JSON] User
-    :<|> "signup" :> ReqBody '[JSON] User :> Post '[JSON] User
+    :<|> "signup" :> ReqBody '[JSON] (Maybe Int) :> Post '[JSON] (Maybe Int)
+    :<|> "sth" :> ReqBody '[JSON] User :> Post '[JSON] User
 
 data User = User
   { name :: String,
@@ -48,6 +49,7 @@ server :: Server UserAPI
 server =
   return users
     :<|> return albert
+    :<|> return
     :<|> return
 
 userAPI :: Proxy UserAPI

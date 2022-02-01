@@ -31,7 +31,6 @@ library:
   - servant-server
   - aeson
   - servant
-  - servant-foreign
 
 executables:
   servant-elm-street-main-exe:

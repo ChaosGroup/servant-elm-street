@@ -10,22 +10,14 @@
 
 module ExampleAPI
   ( userAPI,
-    LangElm,
     server,
   )
 where
 
 import Data.Aeson (ToJSON)
-import Elm.Ast (ElmDefinition)
 import Elm.Generic (Elm (..))
 import GHC.Generics (Generic)
 import Servant (Get, JSON, Post, Proxy (..), ReqBody, Server, type (:<|>) (..), type (:>))
-import Servant.Foreign (HasForeignType (..))
-
-data LangElm
-
-instance Elm a => HasForeignType LangElm ElmDefinition a where
-  typeFor _ _ proxyA = toElmDefinition proxyA
 
 type UserAPI =
   "users" :> Get '[JSON] [User]

@@ -253,7 +253,7 @@ typeRefDecoder :: TypeRef -> Doc ann
 typeRefDecoder (RefCustom TypeName {..}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
 typeRefDecoder (RefPrim elmPrim) = case elmPrim of
   ElmUnit -> parens "Json.Decode.map (always ()) (Json.Decode.list Json.Decode.string)"
-  ElmNever -> "Json.Decode.fail \"Never is not possible\""
+  ElmNever -> parens "Json.Decode.fail \"Never is not possible\""
   ElmBool -> "Json.Decode.bool"
   ElmChar -> "elmStreetDecodeChar"
   ElmInt -> "Json.Decode.int"

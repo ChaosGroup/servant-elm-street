@@ -21,21 +21,7 @@ import Data.Text as T (pack, takeWhile)
 import Elm (Elm (..))
 import Elm.Ast
   ( ElmDefinition,
-    ElmPrim
-      ( ElmBool,
-        ElmChar,
-        ElmFloat,
-        ElmInt,
-        ElmList,
-        ElmMaybe,
-        ElmNever,
-        ElmPair,
-        ElmResult,
-        ElmString,
-        ElmTime,
-        ElmTriple,
-        ElmUnit
-      ),
+    ElmPrim (..),
     TypeName (TypeName, unTypeName),
     TypeRef (..),
     definitionToRef,

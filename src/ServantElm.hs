@@ -273,4 +273,76 @@ typeRefDecoder (RefPrim elmPrim) = case elmPrim of
         <+> typeRefDecoder a
         <+> typeRefDecoder b
         <+> typeRefDecoder c
-  ElmList l -> parens $ "Json.Decode.list" <+> typeRefDecoder l
+  ElmList l -> parens $ "JD.list" <+> typeRefDecoder l
+
+typeRefEncoder :: TypeRef -> Doc ann
+typeRefEncoder (RefCustom TypeName {unTypeName}) = "encode" <> pretty (T.takeWhile (/= ' ') unTypeName)
+typeRefEncoder (RefPrim elmPrim) = case elmPrim of
+  ElmUnit -> "always <| JE.list identity []"
+  ElmNever -> "never"
+  ElmBool -> "JE.bool"
+  ElmChar -> "JE.string << String.fromChar"
+  ElmInt -> "JE.int"
+  ElmFloat -> "JE.float"
+  ElmString -> "JE.string"
+  ElmTime -> "Iso.encode"
+  ElmMaybe t ->
+    "elmStreetEncodeMaybe"
+      <+> parens (typeRefEncoder t)
+  ElmResult l r ->
+    "elmStreetEncodeEither"
+      <+> parens (typeRefEncoder l)
+      <+> parens (typeRefEncoder r)
+  ElmPair a b ->
+    "elmStreetEncodePair"
+      <+> parens (typeRefEncoder a)
+      <+> parens (typeRefEncoder b)
+  ElmTriple a b c ->
+    "elmStreetEncodeTriple"
+      <+> parens (typeRefEncoder a)
+      <+> parens (typeRefEncoder b)
+      <+> parens (typeRefEncoder c)
+  ElmList l -> "JE.list" <+> parens (typeRefEncoder l)
+
+generateElmModule ::
+  ( HasForeign LangElm ElmDefinition api,
+    GenerateList ElmDefinition (Foreign ElmDefinition api)
+  ) =>
+  Settings ->
+  Proxy api ->
+  IO ()
+generateElmModule Settings {settingsDirectory, settingsModule} api =
+  TIO.writeFile filePath (showDoc moduleFile)
+  where
+    moduleName :: Doc ann
+    moduleName = "Core.Generated.ElmQueries"
+
+    moduleHeader :: Doc ann
+    moduleHeader = "module" <+> moduleName <+> "exposing" <+> parens ".."
+
+    queries :: Doc ann
+    queries = vsep (elmForAPI api)
+
+    imports :: Doc ann
+    imports =
+      vsep $
+        map
+          ("import" <+>)
+          [ "Core.Generated.Decoder" <+> "exposing" <+> parens "..",
+            "Core.Generated.Encoder" <+> "exposing" <+> parens "..",
+            "Core.Generated.ElmStreet" <+> "exposing" <+> parens "..",
+            "Core.Generated.Types" <+> "exposing" <+> parens "..",
+            "Http",
+            "Json.Decode as JD",
+            "Json.Encode as JE",
+            "Url.Builder"
+          ]
+
+    filePath :: FilePath
+    filePath =
+      settingsDirectory ++ "/"
+        ++ intercalate "/" settingsModule
+        ++ "/ElmQueries.elm"
+
+    moduleFile :: Doc ann
+    moduleFile = moduleHeader <> line <> line <> imports <> line <> line <> queries

@@ -125,7 +125,10 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args = hsep [urlBase, toMsg, bodyValue]
+    args = hsep $ [urlBase, toMsg] ++ bodyArg
+    bodyArg = case requestInfo ^. reqBody of
+      Nothing -> []
+      Just _ -> [bodyValue]
 
     elmRequest =
       mkRequest requestInfo

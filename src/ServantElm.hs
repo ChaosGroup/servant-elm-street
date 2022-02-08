@@ -219,6 +219,7 @@ mkRequest request =
               <> indent4Spaces "Nothing"
           ]
       )
+    <> line
   where
     method = pretty . pack . show $ request ^. reqMethod
 

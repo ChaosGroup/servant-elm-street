@@ -1,6 +1,6 @@
-name:                servant-elm-street-main
+name:                backend
 version:             0.1.0.0
-github:              "ChaosGroup//servant-elm-street-main"
+github:              "ChaosGroup//backend"
 license:             BSD3
 author:              "Magdalena Lungolova"
 maintainer:          "mvlungolova@gmail.com"
@@ -9,15 +9,15 @@ copyright:           "Copyright 2022 Chaos Software OOD"
 extra-source-files:
 - README.md
 
-description:         Please see the README on GitHub at <https://github.com/githubuser/servant-elm-street-main#readme>
+description:         Please see the README on GitHub at <https://github.com/githubuser/backend#readme>
 
 dependencies:
 - base >= 4.7 && < 5
 - elm-street
 
 ghc-options:
-- -Wall
 - -Werror
+- -Wall
 - -Wincomplete-uni-patterns
 - -Wredundant-constraints
 - -Widentities
@@ -30,10 +30,11 @@ library:
   dependencies:
   - servant-server
   - aeson
-  - servant
+  - wai
+  - text
 
 executables:
-  servant-elm-street-main-exe:
+  backend-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -41,7 +42,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - servant-elm-street-main
-    - prettyprinter
+    - backend
     - servant-elm-street
-    - text
+    - warp
+    - wai-cors

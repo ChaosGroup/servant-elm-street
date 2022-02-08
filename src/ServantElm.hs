@@ -140,6 +140,8 @@ mkUrl segments =
     <> line
     <> (indent4Spaces . elmList)
       (map segmentToDoc segments)
+    <> line
+    <> indent4Spaces "[]"
   where
     urlBuilder :: Doc ann
     urlBuilder = "Url.Builder.crossOrigin" <+> urlBase

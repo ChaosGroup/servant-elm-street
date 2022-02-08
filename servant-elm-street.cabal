@@ -30,7 +30,7 @@ library
       Paths_servant_elm_street
   hs-source-dirs:
       src
-  ghc-options: -Wall -Werror -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-deriving-strategies -Wmissing-export-lists -Wunused-packages
+  ghc-options: -Werror -Wall -Wincomplete-uni-patterns -Wredundant-constraints -Widentities -Wincomplete-record-updates -Wmissing-deriving-strategies -Wmissing-export-lists -Wunused-packages
   build-depends:
       base >=4.7 && <5
     , elm-street

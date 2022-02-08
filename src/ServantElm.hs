@@ -245,17 +245,17 @@ mkRequest request =
 typeRefDecoder :: TypeRef -> Doc ann
 typeRefDecoder (RefCustom TypeName {unTypeName}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
 typeRefDecoder (RefPrim elmPrim) = case elmPrim of
-  ElmUnit -> parens "Json.Decode.map (always ()) (Json.Decode.list Json.Decode.string)"
-  ElmNever -> parens "Json.Decode.fail \"Never is not possible\""
-  ElmBool -> "Json.Decode.bool"
+  ElmUnit -> parens "JD.map (always ()) (JD.list JD.string)"
+  ElmNever -> parens "JD.fail \"Never is not possible\""
+  ElmBool -> "JD.bool"
   ElmChar -> "elmStreetDecodeChar"
-  ElmInt -> "Json.Decode.int"
-  ElmFloat -> "Json.Decode.float"
-  ElmString -> "Json.Decode.string"
+  ElmInt -> "JD.int"
+  ElmFloat -> "JD.float"
+  ElmString -> "JD.string"
   ElmTime -> "Iso.decoder"
   ElmMaybe t ->
     parens $
-      "maybe"
+      "JD.maybe"
         <+> typeRefDecoder t
   ElmResult l r ->
     parens $

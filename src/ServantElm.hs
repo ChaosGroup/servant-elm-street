@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -7,19 +8,23 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 module ServantElm
   ( elmForAPI,
     getReqs,
+    generateElmModule,
   )
 where
 
+import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
 import Data.Text as T (pack, takeWhile)
-import Elm (Elm (..))
+import Data.Text.IO as TIO (writeFile)
+import Elm (Elm (..), Settings (settingsDirectory, settingsModule))
 import Elm.Ast
   ( ElmDefinition,
     ElmPrim (..),
@@ -27,6 +32,8 @@ import Elm.Ast
     TypeRef (..),
     definitionToRef,
   )
+import Elm.Generate (Settings (Settings))
+import Elm.Print.Common (showDoc)
 import Lens.Micro ((^.))
 import Prettyprinter
   ( Doc,
@@ -237,8 +244,8 @@ mkRequest request =
 
     body =
       case request ^. reqBody of
-        Just _ ->
-          "Http.jsonBody" <+> bodyValue
+        Just elmTypeExpr ->
+          "Http.jsonBody" <+> parens ((typeRefEncoder . definitionToRef) elmTypeExpr <+> bodyValue)
         Nothing ->
           "Http.emptyBody"
 

@@ -19,12 +19,12 @@ module ServantElm
   )
 where
 
-import Data.List (intercalate)
+import Data.List as L (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
 import Data.Text as T (pack, takeWhile)
 import Data.Text.IO as TIO (writeFile)
-import Elm (Elm (..), Settings (settingsDirectory, settingsModule))
+import Elm (Elm (..))
 import Elm.Ast
   ( ElmDefinition,
     ElmPrim (..),
@@ -32,7 +32,7 @@ import Elm.Ast
     TypeRef (..),
     definitionToRef,
   )
-import Elm.Generate (Settings (Settings))
+import Elm.Generate (Settings (..))
 import Elm.Print.Common (showDoc)
 import Lens.Micro ((^.))
 import Prettyprinter
@@ -321,7 +321,7 @@ generateElmModule ::
   Settings ->
   Proxy api ->
   IO ()
-generateElmModule Settings {settingsDirectory, settingsModule} api =
+generateElmModule Settings {..} api =
   TIO.writeFile filePath (showDoc moduleFile)
   where
     moduleName :: Doc ann
@@ -338,10 +338,10 @@ generateElmModule Settings {settingsDirectory, settingsModule} api =
       vsep $
         map
           ("import" <+>)
-          [ "Core.Generated.Decoder" <+> "exposing" <+> parens "..",
-            "Core.Generated.Encoder" <+> "exposing" <+> parens "..",
+          [ pretty (L.intercalate "." (settingsModule ++ [settingsDecoderFile])) <+> "exposing" <+> parens "..",
+            pretty (L.intercalate "." (settingsModule ++ [settingsEncoderFile])) <+> "exposing" <+> parens "..",
             "Core.Generated.ElmStreet" <+> "exposing" <+> parens "..",
-            "Core.Generated.Types" <+> "exposing" <+> parens "..",
+            pretty (L.intercalate "." (settingsModule ++ [settingsTypesFile])) <+> "exposing" <+> parens "..",
             "Http",
             "Json.Decode as JD",
             "Json.Encode as JE",
@@ -351,7 +351,7 @@ generateElmModule Settings {settingsDirectory, settingsModule} api =
     filePath :: FilePath
     filePath =
       settingsDirectory ++ "/"
-        ++ intercalate "/" settingsModule
+        ++ L.intercalate "/" settingsModule
         ++ "/ElmQueries.elm"
 
     moduleFile :: Doc ann

@@ -214,19 +214,19 @@ mkRequest request =
     <> indent4Spaces
       ( elmRecord
           [ "method ="
-              <> indent4Spaces method,
+              <+> method,
             "headers ="
-              <> indent4Spaces "[]",
+              <+> "[]",
             "url ="
-              <> indent4Spaces url,
+              <+> url,
             "expect ="
-              <> indent4Spaces expect,
+              <+> expect,
             "body ="
-              <> indent4Spaces body,
+              <+> body,
             "timeout ="
-              <> indent4Spaces "Nothing",
+              <+> "Nothing",
             "tracker ="
-              <> indent4Spaces "Nothing"
+              <+> "Nothing"
           ]
       )
     <> line

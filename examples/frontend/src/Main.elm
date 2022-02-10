@@ -104,8 +104,8 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
     ul []
-        [ li [] [ text model.getAlbertResult ]
-        , li [] [ text model.getUsersResult ]
-        , li [] [ text model.postSignUpResult ]
-        , li [] [ text model.postSthResult ]
+        [ li [] [ text <| "/albert : " ++ model.getAlbertResult ]
+        , li [] [ text <| "/users : " ++ model.getUsersResult ]
+        , li [] [ text <| "/signup : " ++ model.postSignUpResult ]
+        , li [] [ text <| "/sth : " ++ model.postSthResult ]
         ]

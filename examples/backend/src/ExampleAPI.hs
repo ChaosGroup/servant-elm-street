@@ -19,18 +19,19 @@ module ExampleAPI
 where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Elm (ElmStreet (..))
 import Elm.Generic (Elm (..))
 import GHC.Generics (Generic)
 import Network.Wai (Application)
-import Servant (Get, JSON, Post, Proxy (..), ReqBody, Server, serve, type (:<|>) (..), type (:>))
+import Servant (Get, Handler, Header, JSON, Post, Proxy (..), ReqBody, Server, serve, type (:<|>) (..), type (:>))
 
 type UserAPI =
   "users" :> Get '[JSON] [User]
     :<|> "albert" :> Get '[JSON] User
     :<|> "signup" :> ReqBody '[JSON] User :> Post '[JSON] User
-    :<|> "sth" :> Post '[JSON] User
+    :<|> "sth" :> Header "someHeader" Text :> Post '[JSON] Text
 
 data User = User
   { name :: Text,
@@ -60,7 +61,10 @@ server =
   return users
     :<|> return albert
     :<|> return
-    :<|> return albert
+    :<|> headerValue
+
+headerValue :: Maybe Text -> Handler Text
+headerValue = return . fromMaybe "no value"
 
 userAPI :: Proxy UserAPI
 userAPI = Proxy

@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -17,9 +18,9 @@ module ExampleAPI
   )
 where
 
-import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON))
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
-import Elm (elmStreetParseJson, elmStreetToJson)
+import Elm (ElmStreet (..))
 import Elm.Generic (Elm (..))
 import GHC.Generics (Generic)
 import Network.Wai (Application)
@@ -36,11 +37,7 @@ data User = User
     age :: Int
   }
   deriving (Generic)
-  deriving anyclass (Elm)
-
-instance ToJSON User where toJSON = elmStreetToJson
-
-instance FromJSON User where parseJSON = elmStreetParseJson
+  deriving (Elm, ToJSON, FromJSON) via ElmStreet User
 
 type Types =
   '[ User

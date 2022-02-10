@@ -173,6 +173,7 @@ elmTypeRefToDoc = \case
 elmTypeParenDoc :: TypeRef -> Doc ann
 elmTypeParenDoc = parens . elmTypeRefToDoc
 
+-- taken from elm-street
 elmPrimToDoc :: ElmPrim -> Doc ann
 elmPrimToDoc = \case
   ElmUnit -> "()"
@@ -249,6 +250,7 @@ mkRequest request =
         Nothing ->
           "Http.emptyBody"
 
+-- taken from elm-street
 typeRefDecoder :: TypeRef -> Doc ann
 typeRefDecoder (RefCustom TypeName {unTypeName}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
 typeRefDecoder (RefPrim elmPrim) = case elmPrim of
@@ -282,6 +284,7 @@ typeRefDecoder (RefPrim elmPrim) = case elmPrim of
         <+> typeRefDecoder c
   ElmList l -> parens $ "JD.list" <+> typeRefDecoder l
 
+-- taken from elm-street
 typeRefEncoder :: TypeRef -> Doc ann
 typeRefEncoder (RefCustom TypeName {unTypeName}) = "encode" <> pretty (T.takeWhile (/= ' ') unTypeName)
 typeRefEncoder (RefPrim elmPrim) = case elmPrim of

@@ -4,10 +4,11 @@ import Core.Generated.Decoder exposing (..)
 import Core.Generated.Encoder exposing (..)
 import Core.Generated.ElmStreet exposing (..)
 import Core.Generated.Types exposing (..)
-import Http
+import Http exposing (..)
 import Json.Decode as JD
 import Json.Encode as JE
 import Url.Builder
+import Maybe exposing (..)
 
 getUsers : String -> (Result Http.Error (List (User)) -> msg) -> Cmd msg
 getUsers urlBase toMsg =
@@ -54,16 +55,16 @@ postSignup urlBase toMsg bodyValue =
         , tracker = Nothing
         }
 
-postSth : String -> (Result Http.Error (User) -> msg) -> Cmd msg
-postSth urlBase toMsg =
+postSth : String -> (Result Http.Error (String) -> msg) -> {someHeader : Maybe (String)} -> Cmd msg
+postSth urlBase toMsg headers =
     Http.request
         { method = "POST"
-        , headers = []
+        , headers = [header "someHeader" (withDefault "" headers.someHeader)]
         , url = Url.Builder.crossOrigin urlBase
             [ "sth"
             ]
             []
-        , expect = Http.expectJson toMsg decodeUser
+        , expect = Http.expectJson toMsg JD.string
         , body = Http.emptyBody
         , timeout = Nothing
         , tracker = Nothing

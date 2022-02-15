@@ -239,7 +239,7 @@ mkRequest request =
           [ "method ="
               <+> method,
             "headers ="
-              <+> "[]",
+              <+> headers,
             "url ="
               <+> url,
             "expect ="

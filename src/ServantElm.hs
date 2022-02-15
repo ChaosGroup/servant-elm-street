@@ -40,6 +40,7 @@ import Prettyprinter
     braces,
     brackets,
     comma,
+    concatWith,
     dquotes,
     encloseSep,
     equals,
@@ -56,6 +57,7 @@ import Prettyprinter
     rbracket,
     rparen,
     space,
+    surround,
     vsep,
     (<+>),
   )
@@ -277,7 +279,8 @@ mkRequest request =
         then "[]"
         else
           brackets $
-            hsep
+            concatWith
+              (surround (comma <> space))
               [ renderHeader header
                 | header <- headerList
               ]

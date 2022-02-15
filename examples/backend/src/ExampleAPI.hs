@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -9,33 +11,37 @@
 {-# LANGUAGE TypeOperators #-}
 
 module ExampleAPI
-  ( queryFile,
+  ( userAPI,
     server,
+    app,
+    Types,
   )
 where
 
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
-import Elm.Ast (ElmDefinition)
+import Elm (ElmStreet (..))
 import Elm.Generic (Elm (..))
-import Elm.Print (showDoc)
 import GHC.Generics (Generic)
-import Prettyprinter (vsep)
-import Servant (Get, JSON, Proxy (..), Server, type (:<|>) (..), type (:>))
-import Servant.Foreign (HasForeignType (..))
-import ServantElm (elmForAPI)
+import Network.Wai (Application)
+import Servant (Get, JSON, Post, Proxy (..), ReqBody, Server, serve, type (:<|>) (..), type (:>))
 
 type UserAPI =
   "users" :> Get '[JSON] [User]
     :<|> "albert" :> Get '[JSON] User
+    :<|> "signup" :> ReqBody '[JSON] User :> Post '[JSON] User
+    :<|> "sth" :> Post '[JSON] User
 
 data User = User
-  { name :: String,
+  { name :: Text,
     age :: Int
   }
-  deriving (Generic, Elm)
+  deriving (Generic)
+  deriving (Elm, ToJSON, FromJSON) via ElmStreet User
 
-instance ToJSON User
+type Types =
+  '[ User
+   ]
 
 users :: [User]
 users =
@@ -53,14 +59,11 @@ server :: Server UserAPI
 server =
   return users
     :<|> return albert
+    :<|> return
+    :<|> return albert
 
 userAPI :: Proxy UserAPI
 userAPI = Proxy
 
-data LangElm
-
-instance Elm a => HasForeignType LangElm ElmDefinition a where
-  typeFor _ _ proxyA = toElmDefinition proxyA
-
-queryFile :: Text
-queryFile = showDoc $ vsep (elmForAPI userAPI)
+app :: Application
+app = serve userAPI server

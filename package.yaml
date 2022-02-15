@@ -11,9 +11,6 @@ extra-source-files:
 
 description:         Please see the README on GitHub at <https://github.com/ChaosGroup/servant-elm-street/blob/main/README.md>
 
-library:
-  source-dirs: src
-
 dependencies:
 - servant-foreign
 - text
@@ -22,9 +19,13 @@ dependencies:
 - microlens
 - prettyprinter
 
+
+library:
+  source-dirs: src
+
 ghc-options:
-- -Wall
 - -Werror
+- -Wall
 - -Wincomplete-uni-patterns
 - -Wredundant-constraints
 - -Widentities

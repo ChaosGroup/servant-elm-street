@@ -1,26 +1,39 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 module ServantElm
   ( elmForAPI,
+    getReqs,
+    generateElmModule,
   )
 where
 
+import qualified Data.List as List
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
-import Data.Text as T (pack)
+import Data.Text as T (pack, takeWhile)
+import Data.Text.IO as TIO (writeFile)
 import Elm (Elm (..))
 import Elm.Ast
   ( ElmDefinition,
+    ElmPrim (..),
+    TypeName (TypeName, unTypeName),
+    TypeRef (..),
+    definitionToRef,
   )
+import Elm.Generate (Settings (..))
+import Elm.Print.Common (showDoc)
 import Lens.Micro ((^.))
 import Prettyprinter
   ( Doc,
@@ -33,11 +46,13 @@ import Prettyprinter
     lbrace,
     lbracket,
     line,
+    lparen,
     parens,
     pretty,
     punctuate,
     rbrace,
     rbracket,
+    rparen,
     space,
     vsep,
     (<+>),
@@ -53,6 +68,7 @@ import Servant.Foreign
     camelCase,
     listFromAPI,
     path,
+    reqBody,
     reqFuncName,
     reqMethod,
     reqReturnType,
@@ -73,14 +89,32 @@ elmForAPI ::
   Proxy api ->
   [Doc ann]
 elmForAPI api =
-  map endpointInfoToElmQuery $
-    listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition) api
+  map endpointInfoToElmQuery $ getReqs api
+
+getReqs ::
+  ( HasForeign LangElm ElmDefinition api,
+    GenerateList
+      ElmDefinition
+      (Foreign ElmDefinition api)
+  ) =>
+  Proxy api ->
+  [Req ElmDefinition]
+getReqs = listFromAPI (Proxy :: Proxy LangElm) (Proxy :: Proxy ElmDefinition)
 
 elmRecord :: [Doc ann] -> Doc ann
 elmRecord = encloseSep (lbrace <> space) (line <> rbrace) (comma <> space)
 
 indent4Spaces :: Doc ann -> Doc ann
 indent4Spaces = indent 4
+
+bodyValue :: Doc ann
+bodyValue = "bodyValue"
+
+toMsg :: Doc ann
+toMsg = "toMsg"
+
+urlBase :: Doc ann
+urlBase = "urlBase"
 
 endpointInfoToElmQuery :: Req ElmDefinition -> Doc ann
 endpointInfoToElmQuery requestInfo =
@@ -98,7 +132,10 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args = hsep ["urlBase", "toMsg"]
+    args = hsep $ [urlBase, toMsg] ++ bodyArg
+    bodyArg = case requestInfo ^. reqBody of
+      Nothing -> []
+      Just _ -> [bodyValue]
 
     elmRequest =
       mkRequest requestInfo
@@ -113,9 +150,11 @@ mkUrl segments =
     <> line
     <> (indent4Spaces . elmList)
       (map segmentToDoc segments)
+    <> line
+    <> indent4Spaces "[]"
   where
     urlBuilder :: Doc ann
-    urlBuilder = "Url.Builder.crossOrigin urlBase"
+    urlBuilder = "Url.Builder.crossOrigin" <+> urlBase
 
     segmentToDoc :: Segment ElmDefinition -> Doc ann
     segmentToDoc s =
@@ -126,12 +165,45 @@ mkUrl segments =
           error
             "to implement - for captures, not needed now"
 
+elmTypeRefToDoc :: TypeRef -> Doc ann
+elmTypeRefToDoc = \case
+  RefPrim elmPrim -> elmPrimToDoc elmPrim
+  RefCustom (TypeName typeName) -> pretty typeName
+
+elmTypeParenDoc :: TypeRef -> Doc ann
+elmTypeParenDoc = parens . elmTypeRefToDoc
+
+-- taken from elm-street
+elmPrimToDoc :: ElmPrim -> Doc ann
+elmPrimToDoc = \case
+  ElmUnit -> "()"
+  ElmNever -> "Never"
+  ElmBool -> "Bool"
+  ElmChar -> "Char"
+  ElmInt -> "Int"
+  ElmFloat -> "Float"
+  ElmString -> "String"
+  ElmTime -> "Posix"
+  ElmMaybe t -> "Maybe" <+> elmTypeParenDoc t
+  ElmResult l r -> "Result" <+> elmTypeParenDoc l <+> elmTypeParenDoc r
+  ElmPair a b -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> rparen
+  ElmTriple a b c -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> comma <+> elmTypeRefToDoc c <> rparen
+  ElmList l -> "List" <+> elmTypeParenDoc l
+
 mkTypeSignature :: Req ElmDefinition -> Doc ann
-mkTypeSignature _ =
-  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, returnType])
+mkTypeSignature request =
+  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, returnType])
   where
+    elmTypeRef :: ElmDefinition -> Doc ann
+    elmTypeRef eDef = elmTypeRefToDoc $ definitionToRef eDef
     toMsgType :: Maybe (Doc ann)
-    toMsgType = Just . parens $ "Result Http.Error ()" <+> "-> msg"
+    toMsgType =
+      fmap mkMsgType $ request ^. reqReturnType
+      where
+        mkMsgType x = parens $ "Result Http.Error" <+> parens (elmTypeRef x) <+> "-> msg"
+
+    bodyType :: Maybe (Doc ann)
+    bodyType = fmap elmTypeRef $ request ^. reqBody
 
     returnType :: Maybe (Doc ann)
     returnType = pure "Cmd msg"
@@ -143,21 +215,22 @@ mkRequest request =
     <> indent4Spaces
       ( elmRecord
           [ "method ="
-              <> indent4Spaces method,
+              <+> method,
             "headers ="
-              <> indent4Spaces "[]",
+              <+> "[]",
             "url ="
-              <> indent4Spaces url,
+              <+> url,
             "expect ="
-              <> indent4Spaces expect,
+              <+> expect,
             "body ="
-              <> indent4Spaces "Http.emptyBody",
+              <+> body,
             "timeout ="
-              <> indent4Spaces "Nothing",
+              <+> "Nothing",
             "tracker ="
-              <> indent4Spaces "Nothing"
+              <+> "Nothing"
           ]
       )
+    <> line
   where
     method = pretty . pack . show $ request ^. reqMethod
 
@@ -166,6 +239,120 @@ mkRequest request =
 
     expect =
       case request ^. reqReturnType of
-        Just _ ->
-          "Http.expectWhatever toMsg"
+        Just elmTypeExpr ->
+          "Http.expectJson" <+> toMsg <+> (typeRefDecoder . definitionToRef) elmTypeExpr
         Nothing -> error "mkHttpRequest: no reqReturnType?"
+
+    body =
+      case request ^. reqBody of
+        Just elmTypeExpr ->
+          "Http.jsonBody" <+> parens ((typeRefEncoder . definitionToRef) elmTypeExpr <+> bodyValue)
+        Nothing ->
+          "Http.emptyBody"
+
+-- taken from elm-street
+typeRefDecoder :: TypeRef -> Doc ann
+typeRefDecoder (RefCustom TypeName {unTypeName}) = "decode" <> pretty (T.takeWhile (/= ' ') unTypeName)
+typeRefDecoder (RefPrim elmPrim) = case elmPrim of
+  ElmUnit -> parens "JD.map (always ()) (JD.list JD.string)"
+  ElmNever -> parens "JD.fail \"Never is not possible\""
+  ElmBool -> "JD.bool"
+  ElmChar -> "elmStreetDecodeChar"
+  ElmInt -> "JD.int"
+  ElmFloat -> "JD.float"
+  ElmString -> "JD.string"
+  ElmTime -> "Iso.decoder"
+  ElmMaybe t ->
+    parens $
+      "JD.maybe"
+        <+> typeRefDecoder t
+  ElmResult l r ->
+    parens $
+      "elmStreetDecodeEither"
+        <+> typeRefDecoder l
+        <+> typeRefDecoder r
+  ElmPair a b ->
+    parens $
+      "elmStreetDecodePair"
+        <+> typeRefDecoder a
+        <+> typeRefDecoder b
+  ElmTriple a b c ->
+    parens $
+      "elmStreetDecodeTriple"
+        <+> typeRefDecoder a
+        <+> typeRefDecoder b
+        <+> typeRefDecoder c
+  ElmList l -> parens $ "JD.list" <+> typeRefDecoder l
+
+-- taken from elm-street
+typeRefEncoder :: TypeRef -> Doc ann
+typeRefEncoder (RefCustom TypeName {unTypeName}) = "encode" <> pretty (T.takeWhile (/= ' ') unTypeName)
+typeRefEncoder (RefPrim elmPrim) = case elmPrim of
+  ElmUnit -> "always <| JE.list identity []"
+  ElmNever -> "never"
+  ElmBool -> "JE.bool"
+  ElmChar -> "JE.string << String.fromChar"
+  ElmInt -> "JE.int"
+  ElmFloat -> "JE.float"
+  ElmString -> "JE.string"
+  ElmTime -> "Iso.encode"
+  ElmMaybe t ->
+    "elmStreetEncodeMaybe"
+      <+> parens (typeRefEncoder t)
+  ElmResult l r ->
+    "elmStreetEncodeEither"
+      <+> parens (typeRefEncoder l)
+      <+> parens (typeRefEncoder r)
+  ElmPair a b ->
+    "elmStreetEncodePair"
+      <+> parens (typeRefEncoder a)
+      <+> parens (typeRefEncoder b)
+  ElmTriple a b c ->
+    "elmStreetEncodeTriple"
+      <+> parens (typeRefEncoder a)
+      <+> parens (typeRefEncoder b)
+      <+> parens (typeRefEncoder c)
+  ElmList l -> "JE.list" <+> parens (typeRefEncoder l)
+
+generateElmModule ::
+  ( HasForeign LangElm ElmDefinition api,
+    GenerateList ElmDefinition (Foreign ElmDefinition api)
+  ) =>
+  Settings ->
+  Proxy api ->
+  IO ()
+generateElmModule Settings {..} api =
+  TIO.writeFile filePath (showDoc moduleFile)
+  where
+    moduleName :: Doc ann
+    moduleName = "Core.Generated.ElmQueries"
+
+    moduleHeader :: Doc ann
+    moduleHeader = "module" <+> moduleName <+> "exposing" <+> parens ".."
+
+    queries :: Doc ann
+    queries = vsep (elmForAPI api)
+
+    imports :: Doc ann
+    imports =
+      vsep $
+        map
+          ("import" <+>)
+          [ pretty (List.intercalate "." (settingsModule ++ [settingsDecoderFile])) <+> "exposing" <+> parens "..",
+            pretty (List.intercalate "." (settingsModule ++ [settingsEncoderFile])) <+> "exposing" <+> parens "..",
+            "Core.Generated.ElmStreet" <+> "exposing" <+> parens "..",
+            pretty (List.intercalate "." (settingsModule ++ [settingsTypesFile])) <+> "exposing" <+> parens "..",
+            "Http",
+            "Json.Decode as JD",
+            "Json.Encode as JE",
+            "Url.Builder"
+          ]
+
+    filePath :: FilePath
+    filePath =
+      settingsDirectory ++ "/"
+        ++ List.intercalate "/" settingsModule
+        ++ "/ElmQueries.elm"
+
+    moduleFile :: Doc ann
+    moduleFile = moduleHeader <> line <> line <> imports <> line <> line <> queries

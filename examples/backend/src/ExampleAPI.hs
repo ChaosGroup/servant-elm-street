@@ -5,6 +5,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -19,19 +20,29 @@ module ExampleAPI
 where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.ByteString
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
+import Data.Text as Text (Text, append, pack, unpack)
+import Data.Text.Encoding (decodeUtf8)
 import Elm (ElmStreet (..))
 import Elm.Generic (Elm (..))
 import GHC.Generics (Generic)
 import Network.Wai (Application)
-import Servant (Get, Handler, Header, JSON, Post, Proxy (..), ReqBody, Server, serve, type (:<|>) (..), type (:>))
+import Servant (FromHttpApiData (parseHeader, parseQueryParam, parseUrlPiece), Get, Handler, Header, Header', JSON, Post, Proxy (..), ReqBody, Required, Server, serve, type (:<|>) (..), type (:>))
 
 type UserAPI =
-  "users" :> Get '[JSON] [User]
-    :<|> "albert" :> Get '[JSON] User
+  "simple" :> "request" :> SimpleRequests
     :<|> "signup" :> ReqBody '[JSON] User :> Post '[JSON] User
-    :<|> "sth" :> Header "someHeader" Text :> Post '[JSON] Text
+    :<|> "headers" :> Headers
+
+type SimpleRequests =
+  "list" :> Get '[JSON] [User]
+    :<|> "customType" :> Get '[JSON] User
+
+type Headers =
+  "basic" :> Header "someHeader" Text :> Post '[JSON] Text
+    :<|> "multiple" :> Header "someHeader1" Text :> Header' '[Required] "someHeader2" Int :> Post '[JSON] Text
+    :<|> "custom-type" :> Header "sort-by" SortBy :> Post '[JSON] SortBy
 
 data User = User
   { name :: Text,
@@ -39,6 +50,11 @@ data User = User
   }
   deriving (Generic)
   deriving (Elm, ToJSON, FromJSON) via ElmStreet User
+
+data SortBy = Age | Name
+  deriving (Show, Generic, Elm)
+
+instance ToJSON SortBy
 
 type Types =
   '[ User
@@ -58,10 +74,42 @@ albert = User {name = "Albert", age = 18}
 
 server :: Server UserAPI
 server =
+  simpleRequests
+    :<|> return
+    :<|> headers
+
+simpleRequests :: Server SimpleRequests
+simpleRequests =
   return users
     :<|> return albert
-    :<|> return
-    :<|> headerValue
+
+headers :: Server Headers
+headers =
+  headerValue
+    :<|> multipleHeadersValue
+    :<|> customTypeHeaderValue
+
+instance FromHttpApiData SortBy where
+  parseHeader :: ByteString -> Either Text SortBy
+  parseHeader value = case (Text.unpack . decodeUtf8) value of
+    "Age" -> Right Age
+    "Name" -> Right Name
+    _ -> Left "error cannot parse SortBy header value"
+  parseQueryParam :: Text -> Either Text SortBy
+  parseQueryParam value = case value of
+    "Age" -> Right Age
+    "Name" -> Right Name
+    _ -> Left "error cannot parse SortBy queryParam value"
+
+customTypeHeaderValue :: Maybe SortBy -> Handler SortBy
+customTypeHeaderValue = return . fromMaybe Age
+
+multipleHeadersValue :: Maybe Text -> Int -> Handler Text
+multipleHeadersValue t i =
+  return $
+    Text.append
+      (fromMaybe "" t)
+      ((Text.pack . show) i)
 
 headerValue :: Maybe Text -> Handler Text
 headerValue = return . fromMaybe "no value"

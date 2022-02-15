@@ -42,7 +42,7 @@ type SimpleRequests =
 type Headers =
   "basic" :> Header "someHeader" Text :> Post '[JSON] Text
     :<|> "multiple" :> Header "someHeader1" Text :> Header' '[Required] "someHeader2" Int :> Post '[JSON] Text
-    :<|> "custom-type" :> Header "sort-by" SortBy :> Post '[JSON] SortBy
+    :<|> "customType" :> Header "sortBy" SortBy :> Post '[JSON] SortBy
 
 data User = User
   { name :: Text,

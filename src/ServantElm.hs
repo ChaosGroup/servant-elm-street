@@ -19,7 +19,7 @@ module ServantElm
   )
 where
 
-import Data.List as L (intercalate)
+import qualified Data.List as List
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
 import Data.Text as T (pack, takeWhile)
@@ -338,10 +338,10 @@ generateElmModule Settings {..} api =
       vsep $
         map
           ("import" <+>)
-          [ pretty (L.intercalate "." (settingsModule ++ [settingsDecoderFile])) <+> "exposing" <+> parens "..",
-            pretty (L.intercalate "." (settingsModule ++ [settingsEncoderFile])) <+> "exposing" <+> parens "..",
+          [ pretty (List.intercalate "." (settingsModule ++ [settingsDecoderFile])) <+> "exposing" <+> parens "..",
+            pretty (List.intercalate "." (settingsModule ++ [settingsEncoderFile])) <+> "exposing" <+> parens "..",
             "Core.Generated.ElmStreet" <+> "exposing" <+> parens "..",
-            pretty (L.intercalate "." (settingsModule ++ [settingsTypesFile])) <+> "exposing" <+> parens "..",
+            pretty (List.intercalate "." (settingsModule ++ [settingsTypesFile])) <+> "exposing" <+> parens "..",
             "Http",
             "Json.Decode as JD",
             "Json.Encode as JE",
@@ -351,7 +351,7 @@ generateElmModule Settings {..} api =
     filePath :: FilePath
     filePath =
       settingsDirectory ++ "/"
-        ++ L.intercalate "/" settingsModule
+        ++ List.intercalate "/" settingsModule
         ++ "/ElmQueries.elm"
 
     moduleFile :: Doc ann

@@ -56,7 +56,7 @@ init _ =
             }
         , getUsers urlBase GotUsers
         , getAlbert urlBase GotUserAlbert
-        , postSth urlBase GotUserSth
+        , postSth urlBase GotUserSth { someHeader = Just "Maggie" }
         ]
     )
 
@@ -69,7 +69,7 @@ type Msg
     = GotUsers (Result Http.Error (List User))
     | GotUserSignUp (Result Http.Error User)
     | GotUserAlbert (Result Http.Error User)
-    | GotUserSth (Result Http.Error User)
+    | GotUserSth (Result Http.Error String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

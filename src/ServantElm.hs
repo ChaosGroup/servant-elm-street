@@ -203,7 +203,7 @@ elmPrimToDoc = \case
 
 mkTypeSignature :: Req ElmDefinition -> Doc ann
 mkTypeSignature request =
-  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headerType, returnType])
+  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headersRecordType, returnType])
   where
     elmTypeRef :: ElmDefinition -> Doc ann
     elmTypeRef eDef = elmTypeRefToDoc $ definitionToRef eDef
@@ -217,13 +217,13 @@ mkTypeSignature request =
     bodyType = fmap elmTypeRef $ request ^. reqBody
 
     headerToRecordField :: HeaderArg ElmDefinition -> Doc ann
-    headerToRecordField header = headerName <+> ":" <+> headeType
+    headerToRecordField header = headerName <+> ":" <+> headerType
       where
         headerName = header ^. headerArg . argName . to (pretty . unPathSegment)
-        headeType = elmTypeRef $ header ^. headerArg . argType
+        headerType = elmTypeRef $ header ^. headerArg . argType
 
-    headerType :: Maybe (Doc ann)
-    headerType = if null requestHeaders then Nothing else Just $ braces $ hsep (map headerToRecordField requestHeaders)
+    headersRecordType :: Maybe (Doc ann)
+    headersRecordType = if null requestHeaders then Nothing else Just $ braces $ hsep (map headerToRecordField requestHeaders)
       where
         requestHeaders = request ^. reqHeaders
 

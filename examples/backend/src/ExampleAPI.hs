@@ -58,7 +58,8 @@ data SortBy = Age | Name
 instance ToJSON SortBy
 
 type Types =
-  '[ User
+  '[ User,
+     SortBy
    ]
 
 users :: [User]

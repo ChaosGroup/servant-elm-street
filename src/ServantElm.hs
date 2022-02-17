@@ -224,7 +224,15 @@ mkTypeSignature request =
         headerType = "String"
 
     headersRecordType :: Maybe (Doc ann)
-    headersRecordType = if null requestHeaders then Nothing else Just $ braces $ hsep (map headerToRecordField requestHeaders)
+    headersRecordType =
+      if null requestHeaders
+        then Nothing
+        else
+          Just $
+            braces $
+              concatWith
+                (surround (comma <> space))
+                (map headerToRecordField requestHeaders)
       where
         requestHeaders = request ^. reqHeaders
 

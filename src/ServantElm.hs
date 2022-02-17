@@ -71,7 +71,6 @@ import Servant.Foreign
     Segment (unSegment),
     SegmentType (Cap, Static),
     argName,
-    argType,
     camelCase,
     headerArg,
     listFromAPI,
@@ -222,7 +221,7 @@ mkTypeSignature request =
     headerToRecordField header = headerName <+> ":" <+> headerType
       where
         headerName = header ^. headerArg . argName . to (pretty . unPathSegment)
-        headerType = elmTypeRef $ header ^. headerArg . argType
+        headerType = "String"
 
     headersRecordType :: Maybe (Doc ann)
     headersRecordType = if null requestHeaders then Nothing else Just $ braces $ hsep (map headerToRecordField requestHeaders)
@@ -288,7 +287,7 @@ mkRequest request =
         headerList = request ^. reqHeaders
 
 renderHeader :: HeaderArg ElmDefinition -> Doc ann
-renderHeader headerInfo = "header" <+> "\"" <> headerName <> "\"" <+> parens ("withDefault" <+> "\"\"" <+> "headers." <> headerName)
+renderHeader headerInfo = "header" <+> "\"" <> headerName <> "\"" <+> "headers." <> headerName
   where
     headerName = pretty $ headerInfo ^. headerArg . argName . to unPathSegment
 
@@ -384,7 +383,7 @@ generateElmModule Settings {..} api =
             pretty (List.intercalate "." (settingsModule ++ [settingsEncoderFile])) <+> "exposing" <+> parens "..",
             "Core.Generated.ElmStreet" <+> "exposing" <+> parens "..",
             pretty (List.intercalate "." (settingsModule ++ [settingsTypesFile])) <+> "exposing" <+> parens "..",
-            "Http",
+            "Http" <+> "exposing" <+> parens "..",
             "Json.Decode as JD",
             "Json.Encode as JE",
             "Url.Builder",

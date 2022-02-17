@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -20,7 +21,7 @@ module ExampleAPI
 where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.ByteString
+import Data.ByteString (ByteString)
 import Data.Maybe (fromMaybe)
 import Data.Text as Text (Text, append, pack, unpack)
 import Data.Text.Encoding (decodeUtf8)

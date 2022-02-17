@@ -10,13 +10,15 @@ import Json.Encode as JE
 import Url.Builder
 import Maybe exposing (..)
 
-getUsers : String -> (Result Http.Error (List (User)) -> msg) -> Cmd msg
-getUsers urlBase toMsg =
+getSimpleRequestList : String -> (Result Http.Error (List (User)) -> msg) -> Cmd msg
+getSimpleRequestList urlBase toMsg =
     Http.request
         { method = "GET"
         , headers = []
         , url = Url.Builder.crossOrigin urlBase
-            [ "users"
+            [ "simple"
+            , "request"
+            , "list"
             ]
             []
         , expect = Http.expectJson toMsg (JD.list decodeUser)
@@ -25,13 +27,15 @@ getUsers urlBase toMsg =
         , tracker = Nothing
         }
 
-getAlbert : String -> (Result Http.Error (User) -> msg) -> Cmd msg
-getAlbert urlBase toMsg =
+getSimpleRequestCustomType : String -> (Result Http.Error (User) -> msg) -> Cmd msg
+getSimpleRequestCustomType urlBase toMsg =
     Http.request
         { method = "GET"
         , headers = []
         , url = Url.Builder.crossOrigin urlBase
-            [ "albert"
+            [ "simple"
+            , "request"
+            , "customType"
             ]
             []
         , expect = Http.expectJson toMsg decodeUser
@@ -55,16 +59,49 @@ postSignup urlBase toMsg bodyValue =
         , tracker = Nothing
         }
 
-postSth : String -> (Result Http.Error (String) -> msg) -> {someHeader : Maybe (String)} -> Cmd msg
-postSth urlBase toMsg headers =
+postHeadersBasic : String -> (Result Http.Error (String) -> msg) -> {someHeader : String} -> Cmd msg
+postHeadersBasic urlBase toMsg headers =
     Http.request
         { method = "POST"
-        , headers = [header "someHeader" (withDefault "" headers.someHeader)]
+        , headers = [header "someHeader" headers.someHeader]
         , url = Url.Builder.crossOrigin urlBase
-            [ "sth"
+            [ "headers"
+            , "basic"
             ]
             []
         , expect = Http.expectJson toMsg JD.string
+        , body = Http.emptyBody
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+postHeadersMultiple : String -> (Result Http.Error (String) -> msg) -> {someHeader1 : String, someHeader2 : String} -> Cmd msg
+postHeadersMultiple urlBase toMsg headers =
+    Http.request
+        { method = "POST"
+        , headers = [header "someHeader1" headers.someHeader1, header "someHeader2" headers.someHeader2]
+        , url = Url.Builder.crossOrigin urlBase
+            [ "headers"
+            , "multiple"
+            ]
+            []
+        , expect = Http.expectJson toMsg JD.string
+        , body = Http.emptyBody
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+postHeadersCustomType : String -> (Result Http.Error (SortBy) -> msg) -> {sortBy : String} -> Cmd msg
+postHeadersCustomType urlBase toMsg headers =
+    Http.request
+        { method = "POST"
+        , headers = [header "sortBy" headers.sortBy]
+        , url = Url.Builder.crossOrigin urlBase
+            [ "headers"
+            , "customType"
+            ]
+            []
+        , expect = Http.expectJson toMsg decodeSortBy
         , body = Http.emptyBody
         , timeout = Nothing
         , tracker = Nothing

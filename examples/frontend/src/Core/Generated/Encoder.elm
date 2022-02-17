@@ -13,3 +13,6 @@ encodeUser x = E.object
     , ("name", E.string x.name)
     , ("age", E.int x.age)
     ]
+
+encodeSortBy : T.SortBy -> Value
+encodeSortBy = E.string << T.showSortBy

@@ -1,9 +1,9 @@
 module Main exposing (..)
 
 import Browser
-import Core.Generated.ElmQueries exposing (getAlbert, getUsers, postSignup, postSth)
+import Core.Generated.ElmQueries exposing (..)
 import Core.Generated.ElmStreet exposing (..)
-import Core.Generated.Types exposing (User)
+import Core.Generated.Types exposing (SortBy, User)
 import Debug exposing (toString)
 import Html exposing (Html, li, text, ul)
 import Http
@@ -30,9 +30,11 @@ main =
 
 type alias Model =
     { postSignUpResult : String
-    , getUsersResult : String
-    , getAlbertResult : String
-    , postSthResult : String
+    , getSimpleRequestListResult : String
+    , getSimpleRequestCustomTypeResult : String
+    , postHeadersBasicResult : String
+    , postHeadersMultipleResult : String
+    , postHeadersCustomTypeResult : String
     }
 
 
@@ -43,20 +45,20 @@ urlBase =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { postSignUpResult = ""
-      , getUsersResult = ""
-      , getAlbertResult = ""
-      , postSthResult = ""
+    ( { getSimpleRequestListResult = ""
+      , getSimpleRequestCustomTypeResult = ""
+      , postSignUpResult = ""
+      , postHeadersBasicResult = ""
+      , postHeadersMultipleResult = ""
+      , postHeadersCustomTypeResult = ""
       }
     , Cmd.batch
-        [ postSignup urlBase
-            GotUserSignUp
-            { name = "Maggie"
-            , age = 23
-            }
-        , getUsers urlBase GotUsers
-        , getAlbert urlBase GotUserAlbert
-        , postSth urlBase GotUserSth { someHeader = Just "Maggie" }
+        [ getSimpleRequestList urlBase GotSimpleRequestListResult
+        , getSimpleRequestCustomType urlBase GotSimpleRequestCustomTypeResult
+        , postSignup urlBase GotSignUpResult { name = "Maggie", age = 23 }
+        , postHeadersBasic urlBase GotHeadersBasicResult { someHeader = "Maggie" }
+        , postHeadersMultiple urlBase GotHeadersMultipleResult { someHeader1 = "He is ", someHeader2 = "23" }
+        , postHeadersCustomType urlBase GotHeadersCustomTypeResult { sortBy = "Name" }
         ]
     )
 
@@ -66,26 +68,34 @@ init _ =
 
 
 type Msg
-    = GotUsers (Result Http.Error (List User))
-    | GotUserSignUp (Result Http.Error User)
-    | GotUserAlbert (Result Http.Error User)
-    | GotUserSth (Result Http.Error String)
+    = GotSimpleRequestListResult (Result Http.Error (List User))
+    | GotSimpleRequestCustomTypeResult (Result Http.Error User)
+    | GotSignUpResult (Result Http.Error User)
+    | GotHeadersBasicResult (Result Http.Error String)
+    | GotHeadersMultipleResult (Result Http.Error String)
+    | GotHeadersCustomTypeResult (Result Http.Error SortBy)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotUsers result ->
-            ( { model | getUsersResult = toString result }, Cmd.none )
+        GotSimpleRequestCustomTypeResult result ->
+            ( { model | getSimpleRequestCustomTypeResult = toString result }, Cmd.none )
 
-        GotUserSignUp result ->
+        GotSimpleRequestListResult result ->
+            ( { model | getSimpleRequestListResult = toString result }, Cmd.none )
+
+        GotSignUpResult result ->
             ( { model | postSignUpResult = toString result }, Cmd.none )
 
-        GotUserAlbert result ->
-            ( { model | getAlbertResult = toString result }, Cmd.none )
+        GotHeadersBasicResult result ->
+            ( { model | postHeadersBasicResult = toString result }, Cmd.none )
 
-        GotUserSth result ->
-            ( { model | postSthResult = toString result }, Cmd.none )
+        GotHeadersMultipleResult result ->
+            ( { model | postHeadersMultipleResult = toString result }, Cmd.none )
+
+        GotHeadersCustomTypeResult result ->
+            ( { model | postHeadersCustomTypeResult = toString result }, Cmd.none )
 
 
 
@@ -104,8 +114,10 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
     ul []
-        [ li [] [ text <| "/albert : " ++ model.getAlbertResult ]
-        , li [] [ text <| "/users : " ++ model.getUsersResult ]
+        [ li [] [ text <| "/simple/request/list : " ++ model.getSimpleRequestListResult ]
+        , li [] [ text <| "/simple/request/customType : " ++ model.getSimpleRequestCustomTypeResult ]
         , li [] [ text <| "/signup : " ++ model.postSignUpResult ]
-        , li [] [ text <| "/sth : " ++ model.postSthResult ]
+        , li [] [ text <| "/headers/basic : " ++ model.postHeadersBasicResult ]
+        , li [] [ text <| "/headers/multiple : " ++ model.postHeadersMultipleResult ]
+        , li [] [ text <| "/headers/customType : " ++ model.postHeadersCustomTypeResult ]
         ]

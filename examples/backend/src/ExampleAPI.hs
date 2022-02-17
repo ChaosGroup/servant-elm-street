@@ -57,6 +57,19 @@ data SortBy = Age | Name
 
 instance ToJSON SortBy
 
+instance FromHttpApiData SortBy where
+  parseHeader :: ByteString -> Either Text SortBy
+  parseHeader value = case (Text.unpack . decodeUtf8) value of
+    "Age" -> Right Age
+    "Name" -> Right Name
+    _ -> Left "error cannot parse SortBy header value"
+
+  parseQueryParam :: Text -> Either Text SortBy
+  parseQueryParam value = case value of
+    "Age" -> Right Age
+    "Name" -> Right Name
+    _ -> Left "error cannot parse SortBy queryParam value"
+
 type Types =
   '[ User,
      SortBy
@@ -90,19 +103,6 @@ headers =
   headerValue
     :<|> multipleHeadersValue
     :<|> customTypeHeaderValue
-
-instance FromHttpApiData SortBy where
-  parseHeader :: ByteString -> Either Text SortBy
-  parseHeader value = case (Text.unpack . decodeUtf8) value of
-    "Age" -> Right Age
-    "Name" -> Right Name
-    _ -> Left "error cannot parse SortBy header value"
-
-  parseQueryParam :: Text -> Either Text SortBy
-  parseQueryParam value = case value of
-    "Age" -> Right Age
-    "Name" -> Right Name
-    _ -> Left "error cannot parse SortBy queryParam value"
 
 customTypeHeaderValue :: Maybe SortBy -> Handler SortBy
 customTypeHeaderValue = return . fromMaybe Age

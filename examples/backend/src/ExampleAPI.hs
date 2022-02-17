@@ -52,9 +52,8 @@ data User = User
   deriving (Elm, ToJSON, FromJSON) via ElmStreet User
 
 data SortBy = Age | Name
-  deriving (Show, Generic, Elm)
-
-instance ToJSON SortBy
+  deriving (Show, Generic)
+  deriving (Elm, ToJSON, FromJSON) via ElmStreet SortBy
 
 instance FromHttpApiData SortBy where
   parseHeader :: ByteString -> Either Text SortBy

@@ -29,7 +29,7 @@ import Elm (ElmStreet (..))
 import Elm.Generic (Elm (..))
 import GHC.Generics (Generic)
 import Network.Wai (Application)
-import Servant (FromHttpApiData (parseHeader, parseQueryParam, parseUrlPiece), Get, Handler, Header, Header', JSON, Post, Proxy (..), ReqBody, Required, Server, serve, type (:<|>) (..), type (:>))
+import Servant (FromHttpApiData (parseHeader, parseQueryParam), Get, Handler, Header, Header', JSON, Post, Proxy (..), ReqBody, Required, Server, serve, type (:<|>) (..), type (:>))
 
 type UserAPI =
   "simple" :> "request" :> SimpleRequests
@@ -97,6 +97,7 @@ instance FromHttpApiData SortBy where
     "Age" -> Right Age
     "Name" -> Right Name
     _ -> Left "error cannot parse SortBy header value"
+
   parseQueryParam :: Text -> Either Text SortBy
   parseQueryParam value = case value of
     "Age" -> Right Age

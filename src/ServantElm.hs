@@ -204,6 +204,11 @@ elmPrimToDoc = \case
   ElmTriple a b c -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> comma <+> elmTypeRefToDoc c <> rparen
   ElmList l -> "List" <+> elmTypeParenDoc l
 
+insertCommas :: Foldable t => t (Doc ann) -> Doc ann
+insertCommas =
+  concatWith
+    (surround (comma <> space))
+
 mkTypeSignature :: Req ElmDefinition -> Doc ann
 mkTypeSignature request =
   (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headersRecordType, returnType])
@@ -231,8 +236,7 @@ mkTypeSignature request =
     headersRecordType =
       nonEmpty requestHeaders <&> \requestHeaders' ->
         braces $
-          concatWith
-            (surround (comma <> space))
+          insertCommas
             (fmap headerToRecordField requestHeaders')
       where
         requestHeaders = request ^. reqHeaders
@@ -285,13 +289,7 @@ mkRequest request =
     headers =
       if null headerList
         then "[]"
-        else
-          "values"
-            <+> brackets
-              ( concatWith
-                  (surround (comma <> space))
-                  $ map headerToDoc headerList
-              )
+        else "values" <+> brackets (insertCommas (map headerToDoc headerList))
       where
         headerList :: [HeaderArg ElmDefinition]
         headerList = request ^. reqHeaders

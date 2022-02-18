@@ -8,7 +8,7 @@ import Debug exposing (toString)
 import Html exposing (Html, li, text, ul)
 import Http
 import Json.Decode exposing (..)
-import Maybe exposing (Maybe)
+import Maybe exposing (..)
 
 
 
@@ -30,7 +30,7 @@ main =
 
 
 type alias Model =
-    { postSignUpResult : String
+    { postBodySignUpResult : String
     , getSimpleRequestListResult : String
     , getSimpleRequestCustomTypeResult : String
     , postHeadersBasicResult : String
@@ -48,7 +48,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { getSimpleRequestListResult = ""
       , getSimpleRequestCustomTypeResult = ""
-      , postSignUpResult = ""
+      , postBodySignUpResult = ""
       , postHeadersBasicResult = ""
       , postHeadersMultipleResult = ""
       , postHeadersCustomTypeResult = ""
@@ -56,7 +56,7 @@ init _ =
     , Cmd.batch
         [ getSimpleRequestList urlBase GotSimpleRequestListResult
         , getSimpleRequestCustomType urlBase GotSimpleRequestCustomTypeResult
-        , postSignup urlBase GotSignUpResult { name = "Maggie", age = 23 }
+        , postBodySignup urlBase GotBodySignUpResult { name = "Maggie", age = 23 }
         , postHeadersBasic urlBase GotHeadersBasicResult { someHeader = Just "Maggie" }
         , postHeadersMultiple urlBase GotHeadersMultipleResult { someHeader1 = Just "He is ", someHeader2 = "23" }
         , postHeadersCustomType urlBase GotHeadersCustomTypeResult { sortBy = Just "Name" }
@@ -71,7 +71,7 @@ init _ =
 type Msg
     = GotSimpleRequestListResult (Result Http.Error (List User))
     | GotSimpleRequestCustomTypeResult (Result Http.Error User)
-    | GotSignUpResult (Result Http.Error User)
+    | GotBodySignUpResult (Result Http.Error User)
     | GotHeadersBasicResult (Result Http.Error String)
     | GotHeadersMultipleResult (Result Http.Error String)
     | GotHeadersCustomTypeResult (Result Http.Error SortBy)
@@ -86,8 +86,8 @@ update msg model =
         GotSimpleRequestListResult result ->
             ( { model | getSimpleRequestListResult = toString result }, Cmd.none )
 
-        GotSignUpResult result ->
-            ( { model | postSignUpResult = toString result }, Cmd.none )
+        GotBodySignUpResult result ->
+            ( { model | postBodySignUpResult = toString result }, Cmd.none )
 
         GotHeadersBasicResult result ->
             ( { model | postHeadersBasicResult = toString result }, Cmd.none )
@@ -117,7 +117,7 @@ view model =
     ul []
         [ li [] [ text <| "/simple/request/list : " ++ model.getSimpleRequestListResult ]
         , li [] [ text <| "/simple/request/customType : " ++ model.getSimpleRequestCustomTypeResult ]
-        , li [] [ text <| "/signup : " ++ model.postSignUpResult ]
+        , li [] [ text <| "/body/signup : " ++ model.postBodySignUpResult ]
         , li [] [ text <| "/headers/basic : " ++ model.postHeadersBasicResult ]
         , li [] [ text <| "/headers/multiple : " ++ model.postHeadersMultipleResult ]
         , li [] [ text <| "/headers/customType : " ++ model.postHeadersCustomTypeResult ]

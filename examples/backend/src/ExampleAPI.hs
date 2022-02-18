@@ -32,12 +32,15 @@ import Servant (FromHttpApiData (parseHeader, parseQueryParam), Get, Handler, He
 
 type UserAPI =
   "simple" :> "request" :> SimpleRequests
-    :<|> "signup" :> ReqBody '[JSON] User :> Post '[JSON] User
+    :<|> "body" :> BodyRequests
     :<|> "headers" :> Headers
 
 type SimpleRequests =
   "list" :> Get '[JSON] [User]
     :<|> "customType" :> Get '[JSON] User
+
+type BodyRequests =
+  "signup" :> ReqBody '[JSON] User :> Post '[JSON] User
 
 type Headers =
   "basic" :> Header "someHeader" Text :> Post '[JSON] Text

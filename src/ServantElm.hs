@@ -20,6 +20,7 @@ module ServantElm
 where
 
 import qualified Data.List as List
+import Data.List.NonEmpty (nonEmpty)
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
 import Data.Text as T (pack, takeWhile)
@@ -34,7 +35,7 @@ import Elm.Ast
   )
 import Elm.Generate (Settings (..))
 import Elm.Print.Common (showDoc)
-import Lens.Micro (to, (^.))
+import Lens.Micro (to, (<&>), (^.))
 import Prettyprinter
   ( Doc,
     braces,
@@ -228,14 +229,11 @@ mkTypeSignature request =
 
     headersRecordType :: Maybe (Doc ann)
     headersRecordType =
-      if null requestHeaders
-        then Nothing
-        else
-          Just $
-            braces $
-              concatWith
-                (surround (comma <> space))
-                (map headerToRecordField requestHeaders)
+      nonEmpty requestHeaders <&> \requestHeaders' ->
+        braces $
+          concatWith
+            (surround (comma <> space))
+            (fmap headerToRecordField requestHeaders')
       where
         requestHeaders = request ^. reqHeaders
 

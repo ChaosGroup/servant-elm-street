@@ -8,6 +8,7 @@ import Debug exposing (toString)
 import Html exposing (Html, li, text, ul)
 import Http
 import Json.Decode exposing (..)
+import Maybe exposing (Maybe)
 
 
 
@@ -56,9 +57,9 @@ init _ =
         [ getSimpleRequestList urlBase GotSimpleRequestListResult
         , getSimpleRequestCustomType urlBase GotSimpleRequestCustomTypeResult
         , postSignup urlBase GotSignUpResult { name = "Maggie", age = 23 }
-        , postHeadersBasic urlBase GotHeadersBasicResult { someHeader = "Maggie" }
-        , postHeadersMultiple urlBase GotHeadersMultipleResult { someHeader1 = "He is ", someHeader2 = "23" }
-        , postHeadersCustomType urlBase GotHeadersCustomTypeResult { sortBy = "Name" }
+        , postHeadersBasic urlBase GotHeadersBasicResult { someHeader = Just "Maggie" }
+        , postHeadersMultiple urlBase GotHeadersMultipleResult { someHeader1 = Just "He is ", someHeader2 = "23" }
+        , postHeadersCustomType urlBase GotHeadersCustomTypeResult { sortBy = Just "Name" }
         ]
     )
 

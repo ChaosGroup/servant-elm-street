@@ -26,7 +26,7 @@ import Data.Text as T (pack, takeWhile)
 import Data.Text.IO as TIO (writeFile)
 import Elm (Elm (..))
 import Elm.Ast
-  ( ElmDefinition,
+  ( ElmDefinition (DefPrim),
     ElmPrim (..),
     TypeName (TypeName, unTypeName),
     TypeRef (..),
@@ -71,6 +71,7 @@ import Servant.Foreign
     Segment (unSegment),
     SegmentType (Cap, Static),
     argName,
+    argType,
     camelCase,
     headerArg,
     listFromAPI,
@@ -221,7 +222,9 @@ mkTypeSignature request =
     headerToRecordField header = headerName <+> ":" <+> headerType
       where
         headerName = header ^. headerArg . argName . to (pretty . unPathSegment)
-        headerType = "String"
+        headerType = case header ^. headerArg . argType of
+          DefPrim (ElmMaybe _) -> "Maybe String"
+          _ -> "String"
 
     headersRecordType :: Maybe (Doc ann)
     headersRecordType =
@@ -285,19 +288,44 @@ mkRequest request =
       if null headerList
         then "[]"
         else
-          brackets $
-            concatWith
-              (surround (comma <> space))
-              [ renderHeader header
-                | header <- headerList
-              ]
+          "values"
+            <+> brackets
+              ( concatWith
+                  (surround (comma <> space))
+                  $ map headerToDoc headerList
+              )
       where
+        headerList :: [HeaderArg ElmDefinition]
         headerList = request ^. reqHeaders
 
-renderHeader :: HeaderArg ElmDefinition -> Doc ann
-renderHeader headerInfo = "header" <+> "\"" <> headerName <> "\"" <+> "headers." <> headerName
-  where
-    headerName = pretty $ headerInfo ^. headerArg . argName . to unPathSegment
+        headerToDoc :: HeaderArg ElmDefinition -> Doc ann
+        headerToDoc header =
+          if isMaybe headerType
+            then
+              "Maybe.map"
+                <+> parens
+                  ( "header"
+                      <+> dquotes headerName
+                  )
+                <+> headerValue
+            else
+              "Just" <+> "<|" <+> "header"
+                <+> dquotes headerName
+                <+> headerValue
+          where
+            headerName :: Doc ann
+            headerName = header ^. headerArg . argName . to (pretty . unPathSegment)
+
+            headerValue :: Doc ann
+            headerValue = "headers." <> headerName
+
+            isMaybe :: ElmDefinition -> Bool
+            isMaybe value = case value of
+              DefPrim (ElmMaybe _) -> True
+              _ -> False
+
+            headerType :: ElmDefinition
+            headerType = header ^. headerArg . argType
 
 -- taken from elm-street
 typeRefDecoder :: TypeRef -> Doc ann
@@ -395,7 +423,8 @@ generateElmModule Settings {..} api =
             "Json.Decode as JD",
             "Json.Encode as JE",
             "Url.Builder",
-            "Maybe" <+> "exposing" <+> parens ".."
+            "Maybe" <+> "exposing" <+> parens "..",
+            "Maybe.Extra" <+> "exposing" <+> parens ".."
           ]
 
     filePath :: FilePath

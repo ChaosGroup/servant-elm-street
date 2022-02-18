@@ -149,7 +149,7 @@ endpointInfoToElmQuery requestInfo =
     bodyArg = case requestInfo ^. reqBody of
       Nothing -> []
       Just _ -> [bodyValue]
-    headerArgs = [headersValue | not (null $ requestInfo ^. reqHeaders)]
+    headerArgs = [headersValue | not $ null $ requestInfo ^. reqHeaders]
 
     elmRequest =
       mkRequest requestInfo

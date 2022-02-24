@@ -20,13 +20,14 @@ module ServantElm
 where
 
 import qualified Data.List as List
+import Data.List.NonEmpty (nonEmpty)
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
 import Data.Text as T (pack, takeWhile)
 import Data.Text.IO as TIO (writeFile)
 import Elm (Elm (..))
 import Elm.Ast
-  ( ElmDefinition,
+  ( ElmDefinition (DefPrim),
     ElmPrim (..),
     TypeName (TypeName, unTypeName),
     TypeRef (..),
@@ -34,10 +35,13 @@ import Elm.Ast
   )
 import Elm.Generate (Settings (..))
 import Elm.Print.Common (showDoc)
-import Lens.Micro ((^.))
+import Lens.Micro (to, (<&>), (^.))
 import Prettyprinter
   ( Doc,
+    braces,
+    brackets,
     comma,
+    concatWith,
     dquotes,
     encloseSep,
     equals,
@@ -54,6 +58,7 @@ import Prettyprinter
     rbracket,
     rparen,
     space,
+    surround,
     vsep,
     (<+>),
   )
@@ -61,15 +66,20 @@ import Servant.Foreign
   ( GenerateList,
     HasForeign (Foreign),
     HasForeignType (..),
+    HeaderArg (..),
     PathSegment (unPathSegment),
     Req,
     Segment (unSegment),
     SegmentType (Cap, Static),
+    argName,
+    argType,
     camelCase,
+    headerArg,
     listFromAPI,
     path,
     reqBody,
     reqFuncName,
+    reqHeaders,
     reqMethod,
     reqReturnType,
     reqUrl,
@@ -116,6 +126,9 @@ toMsg = "toMsg"
 urlBase :: Doc ann
 urlBase = "urlBase"
 
+headersValue :: Doc ann
+headersValue = "headers"
+
 endpointInfoToElmQuery :: Req ElmDefinition -> Doc ann
 endpointInfoToElmQuery requestInfo =
   funcDef
@@ -132,10 +145,11 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args = hsep $ [urlBase, toMsg] ++ bodyArg
+    args = hsep $ [urlBase, toMsg] ++ bodyArg ++ headerArgs
     bodyArg = case requestInfo ^. reqBody of
       Nothing -> []
       Just _ -> [bodyValue]
+    headerArgs = [headersValue | not $ null $ requestInfo ^. reqHeaders]
 
     elmRequest =
       mkRequest requestInfo
@@ -190,9 +204,14 @@ elmPrimToDoc = \case
   ElmTriple a b c -> lparen <> elmTypeRefToDoc a <> comma <+> elmTypeRefToDoc b <> comma <+> elmTypeRefToDoc c <> rparen
   ElmList l -> "List" <+> elmTypeParenDoc l
 
+insertCommas :: Foldable t => t (Doc ann) -> Doc ann
+insertCommas =
+  concatWith
+    (surround (comma <> space))
+
 mkTypeSignature :: Req ElmDefinition -> Doc ann
 mkTypeSignature request =
-  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, returnType])
+  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headersRecordType, returnType])
   where
     elmTypeRef :: ElmDefinition -> Doc ann
     elmTypeRef eDef = elmTypeRefToDoc $ definitionToRef eDef
@@ -204,6 +223,23 @@ mkTypeSignature request =
 
     bodyType :: Maybe (Doc ann)
     bodyType = fmap elmTypeRef $ request ^. reqBody
+
+    headerToRecordField :: HeaderArg ElmDefinition -> Doc ann
+    headerToRecordField header = headerName <+> ":" <+> headerType
+      where
+        headerName = header ^. headerArg . argName . to (pretty . unPathSegment)
+        headerType = case header ^. headerArg . argType of
+          DefPrim (ElmMaybe _) -> "Maybe String"
+          _ -> "String"
+
+    headersRecordType :: Maybe (Doc ann)
+    headersRecordType =
+      nonEmpty requestHeaders <&> \requestHeaders' ->
+        braces $
+          insertCommas
+            (fmap headerToRecordField requestHeaders')
+      where
+        requestHeaders = request ^. reqHeaders
 
     returnType :: Maybe (Doc ann)
     returnType = pure "Cmd msg"
@@ -217,7 +253,7 @@ mkRequest request =
           [ "method ="
               <+> method,
             "headers ="
-              <+> "[]",
+              <+> headers,
             "url ="
               <+> url,
             "expect ="
@@ -249,6 +285,43 @@ mkRequest request =
           "Http.jsonBody" <+> parens ((typeRefEncoder . definitionToRef) elmTypeExpr <+> bodyValue)
         Nothing ->
           "Http.emptyBody"
+
+    headers =
+      if null headerList
+        then "[]"
+        else "values" <+> brackets (insertCommas (map headerToDoc headerList))
+      where
+        headerList :: [HeaderArg ElmDefinition]
+        headerList = request ^. reqHeaders
+
+        headerToDoc :: HeaderArg ElmDefinition -> Doc ann
+        headerToDoc header =
+          if isMaybe headerType
+            then
+              "Maybe.map"
+                <+> parens
+                  ( "header"
+                      <+> dquotes headerName
+                  )
+                <+> headerValue
+            else
+              "Just" <+> "<|" <+> "header"
+                <+> dquotes headerName
+                <+> headerValue
+          where
+            headerName :: Doc ann
+            headerName = header ^. headerArg . argName . to (pretty . unPathSegment)
+
+            headerValue :: Doc ann
+            headerValue = "headers." <> headerName
+
+            isMaybe :: ElmDefinition -> Bool
+            isMaybe value = case value of
+              DefPrim (ElmMaybe _) -> True
+              _ -> False
+
+            headerType :: ElmDefinition
+            headerType = header ^. headerArg . argType
 
 -- taken from elm-street
 typeRefDecoder :: TypeRef -> Doc ann
@@ -342,10 +415,12 @@ generateElmModule Settings {..} api =
             pretty (List.intercalate "." (settingsModule ++ [settingsEncoderFile])) <+> "exposing" <+> parens "..",
             "Core.Generated.ElmStreet" <+> "exposing" <+> parens "..",
             pretty (List.intercalate "." (settingsModule ++ [settingsTypesFile])) <+> "exposing" <+> parens "..",
-            "Http",
+            "Http" <+> "exposing" <+> parens "..",
             "Json.Decode as JD",
             "Json.Encode as JE",
-            "Url.Builder"
+            "Url.Builder",
+            "Maybe" <+> "exposing" <+> parens "..",
+            "Maybe.Extra" <+> "exposing" <+> parens ".."
           ]
 
     filePath :: FilePath

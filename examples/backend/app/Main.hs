@@ -14,7 +14,7 @@ settings :: Settings
 settings = defaultSettings "./examples/frontend/src" ["Core", "Generated"]
 
 corsResourcePolicy :: CorsResourcePolicy
-corsResourcePolicy = simpleCorsResourcePolicy {corsRequestHeaders = ["Content-Type"]}
+corsResourcePolicy = simpleCorsResourcePolicy {corsRequestHeaders = ["Content-Type", "someHeader", "someHeader1", "someHeader2", "sortBy"]}
 
 main :: IO ()
 main = do

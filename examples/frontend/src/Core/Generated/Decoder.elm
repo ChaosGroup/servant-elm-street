@@ -12,3 +12,6 @@ decodeUser : Decoder T.User
 decodeUser = D.succeed T.User
     |> required "name" D.string
     |> required "age" D.int
+
+decodeSortBy : Decoder T.SortBy
+decodeSortBy = elmStreetDecodeEnum T.readSortBy

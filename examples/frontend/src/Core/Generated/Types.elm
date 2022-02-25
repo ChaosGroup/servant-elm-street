@@ -6,6 +6,7 @@ import Time exposing (Posix)
 type alias User =
     { name : String
     , age : Int
+    , author : Bool
     }
 
 type SortBy

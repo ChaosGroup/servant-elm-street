@@ -5,7 +5,7 @@
 module Main (main) where
 
 import Elm.Generate (Settings, defaultSettings, generateElm)
-import ExampleAPI (Types, app, userAPI)
+import ExampleAPI (Types, app, testAPI)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Cors (CorsResourcePolicy (..), cors, simpleCorsResourcePolicy)
 import ServantElm (generateElmModule)
@@ -19,5 +19,5 @@ corsResourcePolicy = simpleCorsResourcePolicy {corsRequestHeaders = ["Content-Ty
 main :: IO ()
 main = do
   generateElm @Types settings
-  generateElmModule settings userAPI
+  generateElmModule settings testAPI
   run 8081 $ cors (const $ Just corsResourcePolicy) app

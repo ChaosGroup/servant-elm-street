@@ -49,7 +49,8 @@ type Headers =
 
 data User = User
   { name :: Text,
-    age :: Int
+    age :: Int,
+    author :: Bool
   }
   deriving (Generic)
   deriving (Elm, ToJSON, FromJSON) via ElmStreet User
@@ -78,21 +79,15 @@ type Types =
 
 users :: [User]
 users =
-  [ User {name = "Mina", age = 18},
-    User {name = "Marta", age = 21},
-    User {name = "Ivan", age = 32},
-    User {name = "Abba", age = 90},
-    User {name = "George", age = 43}
+  [ User {name = "Mina", age = 18, author = False},
+    User {name = "Marta", age = 21, author = True},
+    User {name = "Ivan", age = 18, author = False},
+    User {name = "Abba", age = 90, author = False},
+    User {name = "George", age = 43, author = True}
   ]
 
 albert :: User
-albert = User {name = "Albert", age = 18}
-
-server :: Server UserAPI
-server =
-  simpleRequests
-    :<|> return
-    :<|> headers
+albert = User {name = "Albert", age = 18, author = False}
 
 simpleRequests :: Server SimpleRequests
 simpleRequests =

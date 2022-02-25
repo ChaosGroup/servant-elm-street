@@ -89,6 +89,7 @@ users =
 albert :: User
 albert = User {name = "Albert", age = 18, author = False}
 
+-- server values
 simpleRequests :: Server SimpleRequests
 simpleRequests =
   return users
@@ -100,6 +101,7 @@ headers =
     :<|> multipleHeadersValue
     :<|> customTypeHeaderValue
 
+-- header handlers
 customTypeHeaderValue :: Maybe SortBy -> Handler SortBy
 customTypeHeaderValue = return . fromMaybe Age
 

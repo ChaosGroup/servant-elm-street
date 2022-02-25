@@ -12,6 +12,7 @@ encodeUser x = E.object
     [ ("tag", E.string "User")
     , ("name", E.string x.name)
     , ("age", E.int x.age)
+    , ("author", E.bool x.author)
     ]
 
 encodeSortBy : T.SortBy -> Value

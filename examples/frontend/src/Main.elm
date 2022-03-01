@@ -3,7 +3,7 @@ module Main exposing (..)
 import Browser
 import Core.Generated.ElmQueries exposing (..)
 import Core.Generated.ElmStreet exposing (..)
-import Core.Generated.Types exposing (SortBy, User)
+import Core.Generated.Types exposing (Point, SortBy, User)
 import Debug exposing (toString)
 import Html exposing (Html, li, text, ul)
 import Http
@@ -43,6 +43,8 @@ type alias Model =
     , getQueryParametersCustomFlagResult : String
     , getQueryParametersListResult : String
     , getQueryParametersMixedResult : String
+    , getCapturesSingleByPointIdResult : String
+    , getCapturesMultipleByXByYByZResult : String
     }
 
 
@@ -65,6 +67,8 @@ init _ =
       , getQueryParametersCustomFlagResult = ""
       , getQueryParametersListResult = ""
       , getQueryParametersMixedResult = ""
+      , getCapturesSingleByPointIdResult = ""
+      , getCapturesMultipleByXByYByZResult = ""
       }
     , Cmd.batch
         [ getSimpleRequestList urlBase GotSimpleRequestListResult
@@ -79,6 +83,8 @@ init _ =
         , getQueryParametersCustomFlag urlBase GotQueryParametersCustomFlag { author = Just "True" }
         , getQueryParametersList urlBase GotQueryParametersList { ages = [ "21", "18" ] }
         , getQueryParametersMixed urlBase GotQueryParametersMixed { age = Just "12", name = Just "Annie", authors = [ "Maggie", "Christine", "Paul" ] }
+        , getCapturesSingleByPointId urlBase GotCapturesSingleByPointId { pointId = "3" }
+        , getCapturesMultipleByXByYByZ urlBase GotCapturesMultipleByXByYByZ { x = "10", y = "13", z = "15" }
         ]
     )
 
@@ -100,6 +106,8 @@ type Msg
     | GotQueryParametersCustomFlag (Result Http.Error (List User))
     | GotQueryParametersList (Result Http.Error (List Int))
     | GotQueryParametersMixed (Result Http.Error String)
+    | GotCapturesSingleByPointId (Result Http.Error Point)
+    | GotCapturesMultipleByXByYByZ (Result Http.Error (List Point))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -141,6 +149,12 @@ update msg model =
         GotQueryParametersMixed result ->
             ( { model | getQueryParametersMixedResult = toString result }, Cmd.none )
 
+        GotCapturesSingleByPointId result ->
+            ( { model | getCapturesSingleByPointIdResult = toString result }, Cmd.none )
+
+        GotCapturesMultipleByXByYByZ result ->
+            ( { model | getCapturesMultipleByXByYByZResult = toString result }, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -170,4 +184,6 @@ view model =
         , li [] [ text <| "/query/parameters/custom/flag: " ++ model.getQueryParametersCustomFlagResult ]
         , li [] [ text <| "/query/parameters/list : " ++ model.getQueryParametersListResult ]
         , li [] [ text <| "/query/parameters/mixed : " ++ model.getQueryParametersMixedResult ]
+        , li [] [ text <| "/captures/single : " ++ model.getCapturesSingleByPointIdResult ]
+        , li [] [ text <| "/captures/multiple : " ++ model.getCapturesMultipleByXByYByZResult ]
         ]

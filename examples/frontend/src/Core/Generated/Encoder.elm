@@ -17,3 +17,12 @@ encodeUser x = E.object
 
 encodeSortBy : T.SortBy -> Value
 encodeSortBy = E.string << T.showSortBy
+
+encodePoint : T.Point -> Value
+encodePoint x = E.object
+    [ ("tag", E.string "Point")
+    , ("id", E.int x.id)
+    , ("x", E.int x.x)
+    , ("y", E.int x.y)
+    , ("z", E.int x.z)
+    ]

@@ -213,3 +213,39 @@ getQueryParametersMixed urlBase toMsg queryParameters =
         , timeout = Nothing
         , tracker = Nothing
         }
+
+getCapturesSingleByPointId : String -> (Result Http.Error (Point) -> msg) -> {pointId : String} -> Cmd msg
+getCapturesSingleByPointId urlBase toMsg captures =
+    Http.request
+        { method = "GET"
+        , headers = []
+        , url = Url.Builder.crossOrigin urlBase
+            [ "captures"
+            , "single"
+            , captures.pointId
+            ]
+            []
+        , expect = Http.expectJson toMsg decodePoint
+        , body = Http.emptyBody
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+getCapturesMultipleByXByYByZ : String -> (Result Http.Error (List (Point)) -> msg) -> {x : String, y : String, z : String} -> Cmd msg
+getCapturesMultipleByXByYByZ urlBase toMsg captures =
+    Http.request
+        { method = "GET"
+        , headers = []
+        , url = Url.Builder.crossOrigin urlBase
+            [ "captures"
+            , "multiple"
+            , captures.x
+            , captures.y
+            , captures.z
+            ]
+            []
+        , expect = Http.expectJson toMsg (JD.list decodePoint)
+        , body = Http.emptyBody
+        , timeout = Nothing
+        , tracker = Nothing
+        }

@@ -26,3 +26,10 @@ readSortBy x = case x of
 
 universeSortBy : List SortBy
 universeSortBy = [Age, Name]
+
+type alias Point =
+    { id : Int
+    , x : Int
+    , y : Int
+    , z : Int
+    }

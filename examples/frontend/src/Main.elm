@@ -3,12 +3,13 @@ module Main exposing (..)
 import Browser
 import Core.Generated.ElmQueries exposing (..)
 import Core.Generated.ElmStreet exposing (..)
-import Core.Generated.Types exposing (SortBy, User)
+import Core.Generated.Types exposing (Point, SortBy, User)
 import Debug exposing (toString)
 import Html exposing (Html, li, text, ul)
 import Http
 import Json.Decode exposing (..)
 import Maybe exposing (..)
+import Url.Builder exposing (..)
 
 
 
@@ -36,6 +37,14 @@ type alias Model =
     , postHeadersBasicResult : String
     , postHeadersMultipleResult : String
     , postHeadersCustomTypeResult : String
+    , getQueryParametersSingleResult : String
+    , getQueryParametersTwoResult : String
+    , getQueryParametersRequiredResult : String
+    , getQueryParametersCustomFlagResult : String
+    , getQueryParametersListResult : String
+    , getQueryParametersMixedResult : String
+    , getCapturesSingleByPointIdResult : String
+    , getCapturesMultipleByXByYByZResult : String
     }
 
 
@@ -52,14 +61,30 @@ init _ =
       , postHeadersBasicResult = ""
       , postHeadersMultipleResult = ""
       , postHeadersCustomTypeResult = ""
+      , getQueryParametersSingleResult = ""
+      , getQueryParametersTwoResult = ""
+      , getQueryParametersRequiredResult = ""
+      , getQueryParametersCustomFlagResult = ""
+      , getQueryParametersListResult = ""
+      , getQueryParametersMixedResult = ""
+      , getCapturesSingleByPointIdResult = ""
+      , getCapturesMultipleByXByYByZResult = ""
       }
     , Cmd.batch
         [ getSimpleRequestList urlBase GotSimpleRequestListResult
         , getSimpleRequestCustomType urlBase GotSimpleRequestCustomTypeResult
-        , postBodySignup urlBase GotBodySignUpResult { name = "Maggie", age = 23 }
+        , postBodySignup urlBase GotBodySignUpResult { name = "Maggie", age = 23, author = True }
         , postHeadersBasic urlBase GotHeadersBasicResult { someHeader = Just "Maggie" }
         , postHeadersMultiple urlBase GotHeadersMultipleResult { someHeader1 = Just "He is ", someHeader2 = "23" }
         , postHeadersCustomType urlBase GotHeadersCustomTypeResult { sortBy = Just "Name" }
+        , getQueryParametersSingle urlBase GotQueryParametersSingle { name = Just "Abba" }
+        , getQueryParametersTwo urlBase GotQueryParametersTwo { name = Just "Mina", age = Just "18" }
+        , getQueryParametersRequired urlBase GotQueryParametersRequired { name = "Abba" }
+        , getQueryParametersCustomFlag urlBase GotQueryParametersCustomFlag { author = Just "True" }
+        , getQueryParametersList urlBase GotQueryParametersList { ages = [ "21", "18" ] }
+        , getQueryParametersMixed urlBase GotQueryParametersMixed { age = Just "12", name = Just "Annie", authors = [ "Maggie", "Christine", "Paul" ] }
+        , getCapturesSingleByPointId urlBase GotCapturesSingleByPointId { pointId = "3" }
+        , getCapturesMultipleByXByYByZ urlBase GotCapturesMultipleByXByYByZ { x = "10", y = "13", z = "15" }
         ]
     )
 
@@ -75,6 +100,14 @@ type Msg
     | GotHeadersBasicResult (Result Http.Error String)
     | GotHeadersMultipleResult (Result Http.Error String)
     | GotHeadersCustomTypeResult (Result Http.Error SortBy)
+    | GotQueryParametersSingle (Result Http.Error (List User))
+    | GotQueryParametersTwo (Result Http.Error (List User))
+    | GotQueryParametersRequired (Result Http.Error (List User))
+    | GotQueryParametersCustomFlag (Result Http.Error (List User))
+    | GotQueryParametersList (Result Http.Error (List Int))
+    | GotQueryParametersMixed (Result Http.Error String)
+    | GotCapturesSingleByPointId (Result Http.Error Point)
+    | GotCapturesMultipleByXByYByZ (Result Http.Error (List Point))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -97,6 +130,30 @@ update msg model =
 
         GotHeadersCustomTypeResult result ->
             ( { model | postHeadersCustomTypeResult = toString result }, Cmd.none )
+
+        GotQueryParametersSingle result ->
+            ( { model | getQueryParametersSingleResult = toString result }, Cmd.none )
+
+        GotQueryParametersTwo result ->
+            ( { model | getQueryParametersTwoResult = toString result }, Cmd.none )
+
+        GotQueryParametersRequired result ->
+            ( { model | getQueryParametersRequiredResult = toString result }, Cmd.none )
+
+        GotQueryParametersCustomFlag result ->
+            ( { model | getQueryParametersCustomFlagResult = toString result }, Cmd.none )
+
+        GotQueryParametersList result ->
+            ( { model | getQueryParametersListResult = toString result }, Cmd.none )
+
+        GotQueryParametersMixed result ->
+            ( { model | getQueryParametersMixedResult = toString result }, Cmd.none )
+
+        GotCapturesSingleByPointId result ->
+            ( { model | getCapturesSingleByPointIdResult = toString result }, Cmd.none )
+
+        GotCapturesMultipleByXByYByZ result ->
+            ( { model | getCapturesMultipleByXByYByZResult = toString result }, Cmd.none )
 
 
 
@@ -121,4 +178,12 @@ view model =
         , li [] [ text <| "/headers/basic : " ++ model.postHeadersBasicResult ]
         , li [] [ text <| "/headers/multiple : " ++ model.postHeadersMultipleResult ]
         , li [] [ text <| "/headers/customType : " ++ model.postHeadersCustomTypeResult ]
+        , li [] [ text <| "/query/parameters/single : " ++ model.getQueryParametersSingleResult ]
+        , li [] [ text <| "/query/parameters/two : " ++ model.getQueryParametersTwoResult ]
+        , li [] [ text <| "/query/parameters/required : " ++ model.getQueryParametersRequiredResult ]
+        , li [] [ text <| "/query/parameters/custom/flag: " ++ model.getQueryParametersCustomFlagResult ]
+        , li [] [ text <| "/query/parameters/list : " ++ model.getQueryParametersListResult ]
+        , li [] [ text <| "/query/parameters/mixed : " ++ model.getQueryParametersMixedResult ]
+        , li [] [ text <| "/captures/single : " ++ model.getCapturesSingleByPointIdResult ]
+        , li [] [ text <| "/captures/multiple : " ++ model.getCapturesMultipleByXByYByZResult ]
         ]

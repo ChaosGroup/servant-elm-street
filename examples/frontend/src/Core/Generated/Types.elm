@@ -6,6 +6,7 @@ import Time exposing (Posix)
 type alias User =
     { name : String
     , age : Int
+    , author : Bool
     }
 
 type SortBy
@@ -25,3 +26,10 @@ readSortBy x = case x of
 
 universeSortBy : List SortBy
 universeSortBy = [Age, Name]
+
+type alias Point =
+    { id : Int
+    , x : Int
+    , y : Int
+    , z : Int
+    }

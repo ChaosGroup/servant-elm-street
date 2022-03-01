@@ -8,6 +8,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -42,7 +43,9 @@ import Prettyprinter
     brackets,
     comma,
     concatWith,
+    dot,
     dquotes,
+    emptyDoc,
     encloseSep,
     equals,
     hsep,
@@ -63,11 +66,14 @@ import Prettyprinter
     (<+>),
   )
 import Servant.Foreign
-  ( GenerateList,
+  ( Arg (Arg),
+    ArgType (Flag, List, Normal),
+    GenerateList,
     HasForeign (Foreign),
     HasForeignType (..),
     HeaderArg (..),
     PathSegment (unPathSegment),
+    QueryArg,
     Req,
     Segment (unSegment),
     SegmentType (Cap, Static),
@@ -77,6 +83,9 @@ import Servant.Foreign
     headerArg,
     listFromAPI,
     path,
+    queryArgName,
+    queryArgType,
+    queryStr,
     reqBody,
     reqFuncName,
     reqHeaders,
@@ -129,6 +138,12 @@ urlBase = "urlBase"
 headersValue :: Doc ann
 headersValue = "headers"
 
+queryParamsValue :: Doc ann
+queryParamsValue = "queryParameters"
+
+capturesValue :: Doc ann
+capturesValue = "captures"
+
 endpointInfoToElmQuery :: Req ElmDefinition -> Doc ann
 endpointInfoToElmQuery requestInfo =
   funcDef
@@ -145,11 +160,13 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args = hsep $ [urlBase, toMsg] ++ bodyArg ++ headerArgs
+    args = hsep $ [urlBase, toMsg] ++ bodyArg ++ headerArgs ++ queryParamArgs ++ captureArgs
     bodyArg = case requestInfo ^. reqBody of
       Nothing -> []
       Just _ -> [bodyValue]
     headerArgs = [headersValue | not $ null $ requestInfo ^. reqHeaders]
+    queryParamArgs = [queryParamsValue | not $ null $ requestInfo ^. reqUrl . queryStr]
+    captureArgs = [capturesValue | not $ null $ captureSegments requestInfo]
 
     elmRequest =
       mkRequest requestInfo
@@ -158,14 +175,14 @@ elmList :: [Doc ann] -> Doc ann
 elmList [] = lbracket <> rbracket
 elmList ds = lbracket <+> hsep (punctuate (line <> comma) ds) <> line <> rbracket
 
-mkUrl :: [Segment ElmDefinition] -> Doc ann
-mkUrl segments =
+mkUrl :: [Segment ElmDefinition] -> [QueryArg ElmDefinition] -> Doc ann
+mkUrl segments queryArgs =
   urlBuilder
     <> line
     <> (indent4Spaces . elmList)
       (map segmentToDoc segments)
     <> line
-    <> indent4Spaces "[]"
+    <> indent4Spaces queryParams
   where
     urlBuilder :: Doc ann
     urlBuilder = "Url.Builder.crossOrigin" <+> urlBase
@@ -175,9 +192,44 @@ mkUrl segments =
       case unSegment s of
         Static sPath ->
           dquotes (pretty (unPathSegment sPath))
-        Cap _ ->
-          error
-            "to implement - for captures, not needed now"
+        Cap arg -> capturesValue <> dot <> arg ^. argName . to (pretty . unPathSegment)
+
+    queryParams =
+      if null queryArgs
+        then "[]"
+        else parens $ "List.filterMap" <+> "identity" <+> "<|" <+> "List.foldl (++) []" <+> brackets paramArgsAsLists
+      where
+        paramArgsAsLists = insertCommas (map paramToDoc queryArgs)
+
+        paramToDoc :: QueryArg ElmDefinition -> Doc ann
+        paramToDoc queryArg =
+          case queryArgTypeDoc of
+            Flag -> error "flags not allowed, use QueryParam Bool instead"
+            Normal ->
+              brackets $
+                if isMaybe queryArgValueTypeDoc
+                  then
+                    "Maybe.map"
+                      <+> parens
+                        ( "string"
+                            <+> dquotes queryArgNameDoc
+                        )
+                      <+> "queryParameters." <> queryArgNameDoc
+                  else
+                    "Just" <+> "<|" <+> "string"
+                      <+> dquotes queryArgNameDoc
+                      <+> "queryParameters." <> queryArgNameDoc
+            List -> parens $ "List.map" <+> "(\\listValue -> Just <| string" <+> dquotes queryArgNameDoc <+> "listValue)" <+> queryParamsValue <> "." <> queryArgNameDoc
+          where
+            queryArgValueTypeDoc = queryArg ^. queryArgName . argType
+
+            isMaybe :: ElmDefinition -> Bool
+            isMaybe value = case value of
+              DefPrim (ElmMaybe _) -> True
+              _ -> False
+
+            queryArgNameDoc = queryArg ^. queryArgName . argName . to (pretty . unPathSegment)
+            queryArgTypeDoc = queryArg ^. queryArgType
 
 elmTypeRefToDoc :: TypeRef -> Doc ann
 elmTypeRefToDoc = \case
@@ -209,12 +261,22 @@ insertCommas =
   concatWith
     (surround (comma <> space))
 
+elmTypeRef :: ElmDefinition -> Doc ann
+elmTypeRef eDef = elmTypeRefToDoc $ definitionToRef eDef
+
+captureSegments :: Req ElmDefinition -> [Segment ElmDefinition]
+captureSegments request =
+  filter
+    ( \segment -> case unSegment segment of
+        Static _ -> False
+        Cap _ -> True
+    )
+    $ request ^. reqUrl . path
+
 mkTypeSignature :: Req ElmDefinition -> Doc ann
 mkTypeSignature request =
-  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headersRecordType, returnType])
+  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headersRecordType, queryParamsRecordType, capturesRecordType, returnType])
   where
-    elmTypeRef :: ElmDefinition -> Doc ann
-    elmTypeRef eDef = elmTypeRefToDoc $ definitionToRef eDef
     toMsgType :: Maybe (Doc ann)
     toMsgType =
       fmap mkMsgType $ request ^. reqReturnType
@@ -240,6 +302,39 @@ mkTypeSignature request =
             (fmap headerToRecordField requestHeaders')
       where
         requestHeaders = request ^. reqHeaders
+
+    paramToRecordField :: QueryArg ElmDefinition -> Doc ann
+    paramToRecordField param = argNameDoc <+> ":" <+> queryArgValueTypeDoc
+      where
+        argNameDoc :: Doc ann
+        argNameDoc = param ^. queryArgName . argName . to (pretty . unPathSegment)
+
+        queryArgValueTypeDoc :: Doc ann
+        queryArgValueTypeDoc = case param ^. queryArgName . argType of
+          DefPrim (ElmMaybe _) -> "Maybe String"
+          DefPrim (ElmList _) -> parens ("List" <+> "String")
+          _ -> "String"
+
+    queryParamsRecordType :: Maybe (Doc ann)
+    queryParamsRecordType =
+      nonEmpty queryParams <&> \queryParams' ->
+        braces $
+          insertCommas
+            (fmap paramToRecordField queryParams')
+      where
+        queryParams = request ^. reqUrl . queryStr
+
+    capturesRecordType :: Maybe (Doc ann)
+    capturesRecordType =
+      nonEmpty (captureSegments request) <&> \captureSegments' ->
+        braces $
+          insertCommas
+            (fmap captureSegmentToRecordField captureSegments')
+
+    captureSegmentToRecordField :: Segment ElmDefinition -> Doc ann
+    captureSegmentToRecordField segment = case unSegment segment of
+      Static _ -> emptyDoc
+      Cap (Arg argname _) -> pretty (unPathSegment argname) <+> ":" <+> "String"
 
     returnType :: Maybe (Doc ann)
     returnType = pure "Cmd msg"
@@ -271,7 +366,7 @@ mkRequest request =
     method = pretty . pack . show $ request ^. reqMethod
 
     url =
-      mkUrl (request ^. reqUrl . path)
+      mkUrl (request ^. reqUrl . path) (request ^. reqUrl . queryStr)
 
     expect =
       case request ^. reqReturnType of
@@ -420,7 +515,9 @@ generateElmModule Settings {..} api =
             "Json.Encode as JE",
             "Url.Builder",
             "Maybe" <+> "exposing" <+> parens "..",
-            "Maybe.Extra" <+> "exposing" <+> parens ".."
+            "Maybe.Extra" <+> "exposing" <+> parens "..",
+            "Url.Builder" <+> "exposing" <+> parens "..",
+            "List"
           ]
 
     filePath :: FilePath

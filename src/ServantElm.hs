@@ -43,7 +43,9 @@ import Prettyprinter
     brackets,
     comma,
     concatWith,
+    dot,
     dquotes,
+    emptyDoc,
     encloseSep,
     equals,
     hsep,
@@ -64,7 +66,8 @@ import Prettyprinter
     (<+>),
   )
 import Servant.Foreign
-  ( ArgType (Flag, List, Normal),
+  ( Arg (Arg),
+    ArgType (Flag, List, Normal),
     GenerateList,
     HasForeign (Foreign),
     HasForeignType (..),
@@ -138,6 +141,9 @@ headersValue = "headers"
 queryParamsValue :: Doc ann
 queryParamsValue = "queryParameters"
 
+capturesValue :: Doc ann
+capturesValue = "captures"
+
 endpointInfoToElmQuery :: Req ElmDefinition -> Doc ann
 endpointInfoToElmQuery requestInfo =
   funcDef
@@ -154,12 +160,13 @@ endpointInfoToElmQuery requestInfo =
     typeSignature =
       mkTypeSignature requestInfo
 
-    args = hsep $ [urlBase, toMsg] ++ bodyArg ++ headerArgs ++ queryParamArgs
+    args = hsep $ [urlBase, toMsg] ++ bodyArg ++ headerArgs ++ queryParamArgs ++ captureArgs
     bodyArg = case requestInfo ^. reqBody of
       Nothing -> []
       Just _ -> [bodyValue]
     headerArgs = [headersValue | not $ null $ requestInfo ^. reqHeaders]
     queryParamArgs = [queryParamsValue | not $ null $ requestInfo ^. reqUrl . queryStr]
+    captureArgs = [capturesValue | not $ null $ captureSegments requestInfo]
 
     elmRequest =
       mkRequest requestInfo
@@ -185,9 +192,7 @@ mkUrl segments queryArgs =
       case unSegment s of
         Static sPath ->
           dquotes (pretty (unPathSegment sPath))
-        Cap _ ->
-          error
-            "to implement - for captures, not needed now"
+        Cap arg -> capturesValue <> dot <> arg ^. argName . to (pretty . unPathSegment)
 
     queryParams =
       if null queryArgs
@@ -259,9 +264,18 @@ insertCommas =
 elmTypeRef :: ElmDefinition -> Doc ann
 elmTypeRef eDef = elmTypeRefToDoc $ definitionToRef eDef
 
+captureSegments :: Req ElmDefinition -> [Segment ElmDefinition]
+captureSegments request =
+  filter
+    ( \segment -> case unSegment segment of
+        Static _ -> False
+        Cap _ -> True
+    )
+    $ request ^. reqUrl . path
+
 mkTypeSignature :: Req ElmDefinition -> Doc ann
 mkTypeSignature request =
-  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headersRecordType, queryParamsRecordType, returnType])
+  (hsep . punctuate " ->") ("String" : catMaybes [toMsgType, bodyType, headersRecordType, queryParamsRecordType, capturesRecordType, returnType])
   where
     toMsgType :: Maybe (Doc ann)
     toMsgType =
@@ -309,6 +323,18 @@ mkTypeSignature request =
             (fmap paramToRecordField queryParams')
       where
         queryParams = request ^. reqUrl . queryStr
+
+    capturesRecordType :: Maybe (Doc ann)
+    capturesRecordType =
+      nonEmpty (captureSegments request) <&> \captureSegments' ->
+        braces $
+          insertCommas
+            (fmap captureSegmentToRecordField captureSegments')
+
+    captureSegmentToRecordField :: Segment ElmDefinition -> Doc ann
+    captureSegmentToRecordField segment = case unSegment segment of
+      Static _ -> emptyDoc
+      Cap (Arg argname _) -> pretty (unPathSegment argname) <+> ":" <+> "String"
 
     returnType :: Maybe (Doc ann)
     returnType = pure "Cmd msg"
